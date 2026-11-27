@@ -1,4 +1,5 @@
-import type { HourPoint, KpiSummary, Period, Pharmacy, ShelfRow } from '../api/types'
+import type { Alert, HourPoint, KpiSummary, Period, Pharmacy, ShelfRow } from '../api/types'
+import { ACTION_DONE, ALERT_KINDS, STATUS_LABELS } from '../features/alerts/shared'
 
 // Séparateur « ; » et virgule décimale : ouverture directe dans Excel en français.
 function cell(value: string | number | null) {
@@ -25,11 +26,31 @@ export function downloadReport(
     ['Heure', 'Visiteurs', 'Tickets'],
     ...hourly.map((h) => [h.hour, h.visitors, h.tickets]),
   ]
+  save(`pharmavision-${pharmacy.city.toLowerCase()}-${period}-${kpis.to.slice(0, 10)}.csv`, rows)
+}
+
+export function downloadAlerts(pharmacy: Pharmacy, period: Period, alerts: Alert[]) {
+  const date = (iso: string | null) =>
+    iso && new Date(iso).toLocaleString('fr-FR', { timeZone: pharmacy.timeZone })
+  save(`pharmavision-alertes-${pharmacy.city.toLowerCase()}-${period}.csv`, [
+    ['PharmaVision (données fictives)', pharmacy.name, pharmacy.city],
+    [],
+    ['Début', 'Type', 'Alerte', 'Détail', 'Priorité', 'État', 'Action', 'Pris en charge le', 'Par', 'Fin', 'Clôturée par'],
+    ...alerts.map((a) => [
+      date(a.startedAt), ALERT_KINDS[a.kind].label, a.title, a.detail,
+      a.severity === 'High' ? 'Forte' : 'Moyenne', STATUS_LABELS[a.status],
+      a.actionTaken && ACTION_DONE[a.actionTaken], date(a.acknowledgedAt), a.handledBy, date(a.endedAt),
+      a.status === 'Resolved' ? a.resolvedBy ?? 'Automatique' : null,
+    ]),
+  ])
+}
+
+function save(filename: string, rows: (string | number | null)[][]) {
   const csv = '﻿' + rows.map((r) => r.map(cell).join(';')).join('\r\n')
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
   const link = document.createElement('a')
   link.href = url
-  link.download = `pharmavision-${pharmacy.city.toLowerCase()}-${period}-${kpis.to.slice(0, 10)}.csv`
+  link.download = filename
   link.click()
   URL.revokeObjectURL(url)
 }

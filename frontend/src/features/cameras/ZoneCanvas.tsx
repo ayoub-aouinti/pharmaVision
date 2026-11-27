@@ -33,12 +33,13 @@ function useWidth() {
 }
 
 /** Image de la caméra avec les zones ; les coordonnées sont normalisées entre 0 et 1. */
-export default function ZoneCanvas({ src, zones, selected, tool, onSelect, onCreate, onChange }: {
+export default function ZoneCanvas({ src, zones, selected, tool, readOnly, onSelect, onCreate, onChange }: {
   src: string
   zones: Zone[]
   /** Zone en cours d'édition (brouillon compris), affichée avec ses sommets. */
   selected: Zone | null
   tool: Tool
+  readOnly?: boolean
   onSelect: (zone: Zone) => void
   onCreate: (type: ZoneType, polygon: Point[]) => void
   onChange: (polygon: Point[]) => void
@@ -127,7 +128,7 @@ export default function ZoneCanvas({ src, zones, selected, tool, onSelect, onCre
                 shadowColor="#0f1a17" shadowBlur={4} shadowOpacity={1} />,
             ]
           })}
-          {selected && tool === 'select' && selected.polygon.map((p, i) => (
+          {!readOnly && selected && tool === 'select' && selected.polygon.map((p, i) => (
             <Circle key={`vertex-${selected.id}-${i}`} x={p.x * width} y={p.y * height} radius={7}
               fill="#fff" stroke={ZONE_TYPES[selected.type].color} strokeWidth={3} draggable
               dragBoundFunc={(pos) => ({

@@ -1,7 +1,13 @@
 import type {
-  Alert, AlertAction, Camera, CameraInput, DiscoveredCamera, HeatCell, HourPoint, KpiSummary, Period, Pharmacy,
-  ShelfRow, Zone,
+  Alert, AlertAction, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DiscoveredCamera, HeatCell,
+  HourPoint, KpiSummary, Period, Pharmacy, ShelfRow, Zone,
 } from './types'
+
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+  }
+}
 
 async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(`/api${path}`, {
@@ -10,7 +16,7 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   const text = await response.text()
-  if (!response.ok) throw new Error(errorMessage(text) || `Erreur ${response.status}`)
+  if (!response.ok) throw new ApiError(errorMessage(text) || `Erreur ${response.status}`, response.status)
   return (text ? JSON.parse(text) : undefined) as T
 }
 
@@ -29,6 +35,21 @@ const scoped = (path: string, pharmacyId: number, period: Period) =>
   `/dashboard/${path}?pharmacyId=${pharmacyId}&period=${period}`
 
 export const api = {
+  /** Null quand aucune session n'est ouverte. */
+  me: () => request<CurrentUser>('/auth/me').catch((error) => {
+    if (error instanceof ApiError && error.status === 401) return null
+    throw error
+  }),
+  login: (email: string, password: string) => request<CurrentUser>('/auth/login', 'POST', { email, password }),
+  logout: () => request<void>('/auth/logout', 'POST'),
+  alertHistory: (id: number, period: Period, filters: AlertFilters, page: number, pageSize = 20) => {
+    const query = new URLSearchParams({
+      pharmacyId: String(id), period, state: filters.state, page: String(page), pageSize: String(pageSize),
+    })
+    if (filters.kind) query.set('kind', filters.kind)
+    if (filters.severity) query.set('severity', filters.severity)
+    return request<AlertPage>(`/alerts/history?${query}`)
+  },
   pharmacies: () => request<Pharmacy[]>('/pharmacies'),
   kpis: (id: number, p: Period) => request<KpiSummary>(scoped('kpis', id, p)),
   shelves: (id: number, p: Period) => request<ShelfRow[]>(scoped('shelves', id, p)),

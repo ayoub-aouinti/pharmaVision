@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PharmaVision.Api.Hubs;
@@ -9,6 +10,7 @@ namespace PharmaVision.Api.Controllers;
 
 /// <summary>Point d'entrée des boîtiers locaux, authentifiés par la clé « X-Api-Key ».</summary>
 [ApiController]
+[AllowAnonymous] // pas de session : la clé du boîtier est vérifiée dans chaque action
 [Route("api/ingest")]
 public class IngestController(PharmaDbContext db, LiveNotifier notifier, KpiService kpis, TimeProvider clock) : ControllerBase
 {

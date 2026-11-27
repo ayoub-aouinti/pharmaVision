@@ -18,6 +18,7 @@ public class HourlyAggregate
 
 public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbContext(options)
 {
+    public DbSet<User> Users => Set<User>();
     public DbSet<Pharmacy> Pharmacies => Set<Pharmacy>();
     public DbSet<EdgeDevice> Devices => Set<EdgeDevice>();
     public DbSet<Camera> Cameras => Set<Camera>();
@@ -30,6 +31,7 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        b.Entity<User>().HasIndex(u => u.Email).IsUnique();
         b.Entity<EdgeDevice>().HasIndex(d => d.ApiKey).IsUnique();
 
         b.Entity<Zone>().Property(z => z.Polygon).HasColumnType("jsonb").HasConversion(

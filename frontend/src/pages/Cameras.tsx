@@ -25,7 +25,7 @@ const TOOLS: { tool: Tool; label: string; icon: typeof Square; help: string }[] 
   { tool: 'mask', label: 'Masque de confidentialité', icon: ShieldOff, help: 'Faites glisser sur la partie à ne jamais analyser.' },
 ]
 
-export default function Cameras({ pharmacyId }: { pharmacyId: number }) {
+export default function Cameras({ pharmacyId, canEdit }: { pharmacyId: number; canEdit: boolean }) {
   const client = useQueryClient()
   const cameras = useQuery({ queryKey: ['cameras', pharmacyId], queryFn: () => api.cameras(pharmacyId) })
   const [cameraId, setCameraId] = useState<number | null>(null)
@@ -117,15 +117,19 @@ export default function Cameras({ pharmacyId }: { pharmacyId: number }) {
             </li>
           ))}
         </ul>
-        <div className="mt-3 grid gap-2">
-          <Button onClick={() => setDialog('discover')}><Radar size={15} /> Découvrir (ONVIF)</Button>
-          <Button variant="primary" onClick={() => setDialog('add')}><Plus size={15} /> Ajouter une caméra</Button>
-        </div>
+        {canEdit ? (
+          <div className="mt-3 grid gap-2">
+            <Button onClick={() => setDialog('discover')}><Radar size={15} /> Découvrir (ONVIF)</Button>
+            <Button variant="primary" onClick={() => setDialog('add')}><Plus size={15} /> Ajouter une caméra</Button>
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-muted">Consultation seule : la configuration est réservée au titulaire.</p>
+        )}
       </Card>
 
       {!camera ? <Card><p className="text-sm text-muted">Ajoutez une caméra pour commencer.</p></Card> : (
         <>
-          <Card title={camera.name} className="self-start" aside={
+          <Card title={camera.name} className="self-start" aside={canEdit && (
             <div className="flex gap-2">
               <Button onClick={() => setDialog('edit')}><Pencil size={15} /> Modifier</Button>
               <Button variant="danger" disabled={removeCamera.isPending}
@@ -133,7 +137,8 @@ export default function Cameras({ pharmacyId }: { pharmacyId: number }) {
                 <Trash2 size={15} /> Supprimer
               </Button>
             </div>
-          }>
+          )}>
+            {canEdit && (<>
             <div role="toolbar" aria-label="Outils de dessin" className="mb-2 flex flex-wrap gap-1.5">
               {TOOLS.map((t) => (
                 <Button key={t.tool} aria-pressed={tool === t.tool} variant={tool === t.tool ? 'primary' : 'secondary'}
@@ -146,10 +151,11 @@ export default function Cameras({ pharmacyId }: { pharmacyId: number }) {
               </Button>
             </div>
             <p className="mb-2 text-xs text-muted">{TOOLS.find((t) => t.tool === tool)?.help}</p>
-            <ZoneCanvas key={camera.id} src={snapshotUrl(camera.id)} zones={camera.zones} selected={draft} tool={tool}
+            </>)}
+            <ZoneCanvas key={camera.id} src={snapshotUrl(camera.id)} zones={camera.zones} selected={draft} tool={tool} readOnly={!canEdit}
               onSelect={selectZone} onCreate={create} onChange={(polygon) => draft && edit({ ...draft, polygon })} />
             <p className="mt-2 text-xs text-muted">
-              Image fictive · {camera.resolution} · {camera.rtspUrl}
+              Image fictive · {camera.resolution}{camera.rtspUrl && ` · ${camera.rtspUrl}`}
               {camera.referencePhotoAt && ` · photo de référence du ${new Date(camera.referencePhotoAt).toLocaleString('fr-FR')}`}
             </p>
             {(photo.error ?? removeCamera.error) && (
@@ -159,14 +165,16 @@ export default function Cameras({ pharmacyId }: { pharmacyId: number }) {
 
           <Card title={draft ? 'Propriétés de la zone' : 'Zones'} className="self-start lg:col-start-2 2xl:col-start-auto">
             {draft ? (
-              <ZoneForm zone={draft} dirty={dirty} saving={save.isPending || remove.isPending}
+              <ZoneForm zone={draft} readOnly={!canEdit} dirty={dirty} saving={save.isPending || remove.isPending}
                 error={(save.error ?? remove.error)?.message ?? null}
                 onChange={edit}
                 onSave={() => save.mutate(draft)}
                 onCancel={close}
                 onDelete={() => window.confirm(`Supprimer la zone « ${draft.name} » et ses mesures ?`) && remove.mutate(draft.id)} />
             ) : camera.zones.length === 0 ? (
-              <p className="text-sm text-muted">Aucune zone. Choisissez un outil et dessinez sur l'image.</p>
+              <p className="text-sm text-muted">
+                {canEdit ? "Aucune zone. Choisissez un outil et dessinez sur l'image." : 'Aucune zone.'}
+              </p>
             ) : (
               <ul className="space-y-1.5">
                 {camera.zones.map((zone) => (

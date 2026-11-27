@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -99,6 +100,32 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
         return (events, sales);
     }
 
+    /// <summary>Comptes de démonstration, créés si la base n'en contient aucun.</summary>
+    public async Task SeedUsersAsync(string password, CancellationToken ct = default)
+    {
+        if (await db.Users.AnyAsync(ct)) return;
+        var pharmacies = await db.Pharmacies.OrderBy(p => p.Id).Select(p => new { p.Id, p.City }).ToListAsync(ct);
+        var hasher = new PasswordHasher<User>();
+
+        var users = pharmacies.Select(p => new User
+        {
+            Email = $"equipe.{p.City.ToLowerInvariant()}@pharmavision.demo",
+            DisplayName = $"Équipe {p.City}",
+            Role = UserRole.Equipe,
+            PharmacyIds = [p.Id],
+        }).Prepend(new User
+        {
+            Email = "titulaire@pharmavision.demo",
+            DisplayName = "Titulaire (démo)",
+            Role = UserRole.Titulaire,
+            PharmacyIds = pharmacies.Select(p => p.Id).ToList(),
+        }).ToList();
+
+        foreach (var user in users) user.PasswordHash = hasher.HashPassword(user, password);
+        db.Users.AddRange(users);
+        await db.SaveChangesAsync(ct);
+    }
+
     private async Task CopyAsync(int pharmacyId, List<IngestEvent> events, List<IngestSale> sales, CancellationToken ct)
     {
         await db.Database.OpenConnectionAsync(ct);
@@ -168,6 +195,8 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
                     Status = AlertStatus.Resolved,
                     HandledBy = rng.NextDouble() < 0.5 ? "Équipe comptoir" : "Préparateur",
                     ActionTaken = kind == AlertKind.QueueWait ? "notify" : "restock",
+                    AcknowledgedAt = start.AddMinutes(rng.Next(1, 6)),
+                    ResolvedBy = rng.NextDouble() < 0.4 ? "Préparateur" : null,
                 };
             }
         }

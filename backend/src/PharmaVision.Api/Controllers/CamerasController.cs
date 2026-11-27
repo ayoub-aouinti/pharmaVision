@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PharmaVision.Api.Hubs;
+using PharmaVision.Api.Security;
 using PharmaVision.Api.Services;
 using PharmaVision.Domain;
 using PharmaVision.Infrastructure;
@@ -44,6 +46,13 @@ public static class Mapping
 [Route("api/cameras")]
 public class CamerasController(PharmaDbContext db, TimeProvider clock) : ControllerBase
 {
+    /// <summary>Caméras des officines accessibles au compte connecté.</summary>
+    private IQueryable<Camera> Scoped()
+    {
+        var allowed = User.PharmacyIds();
+        return db.Cameras.Where(c => allowed.Contains(c.Device!.PharmacyId));
+    }
+
     [HttpGet]
     public async Task<List<CameraDto>> List(int pharmacyId, CancellationToken ct)
     {
@@ -52,6 +61,7 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
             .Include(c => c.Zones).ThenInclude(z => z.Rules)
             .OrderBy(c => c.Id).AsSplitQuery().ToListAsync(ct);
 
+        var owner = User.IsInRole(Roles.Titulaire);
         var now = clock.GetUtcNow().UtcDateTime;
         var since = now.AddSeconds(-60);
         var zoneIds = cameras.SelectMany(c => c.Zones).Select(z => z.Id).ToList();
@@ -64,15 +74,17 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
         {
             var own = c.Zones.Select(z => z.Id).ToHashSet();
             var people = recent.Where(r => own.Contains(r.ZoneId)).Select(r => r.TrackId).Distinct().Count();
-            return new CameraDto(c.Id, c.Name, c.Brand, c.Protocol, c.RtspUrl, c.Resolution, c.Status, c.ReferencePhotoAt,
+            return new CameraDto(c.Id, c.Name, c.Brand, c.Protocol, owner ? c.RtspUrl : "", c.Resolution, c.Status, c.ReferencePhotoAt,
                 c.Status == CameraStatus.Online ? people : 0,
                 c.Zones.OrderBy(z => z.Id).Select(z => z.ToDto()).ToList());
         }).ToList();
     }
 
+    [Authorize(Roles = Roles.Titulaire)]
     [HttpPost]
     public async Task<ActionResult<int>> Create(CameraInput input, CancellationToken ct)
     {
+        if (!User.CanAccess(input.PharmacyId)) return Forbid();
         var device = await db.Devices.FirstOrDefaultAsync(d => d.PharmacyId == input.PharmacyId, ct);
         if (device is null) return NotFound("Aucun boîtier pour cette pharmacie");
         var camera = new Camera
@@ -85,10 +97,11 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
         return camera.Id;
     }
 
+    [Authorize(Roles = Roles.Titulaire)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CameraInput input, CancellationToken ct)
     {
-        var camera = await db.Cameras.FindAsync([id], ct);
+        var camera = await Scoped().FirstOrDefaultAsync(c => c.Id == id, ct);
         if (camera is null) return NotFound();
         (camera.Name, camera.Brand, camera.RtspUrl, camera.Status) = (input.Name, input.Brand, input.RtspUrl, input.Status);
         camera.Resolution = input.Resolution ?? camera.Resolution;
@@ -96,11 +109,13 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
         return NoContent();
     }
 
+    [Authorize(Roles = Roles.Titulaire)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
-        await db.Cameras.Where(c => c.Id == id).ExecuteDeleteAsync(ct) == 0 ? NotFound() : NoContent();
+        await Scoped().Where(c => c.Id == id).ExecuteDeleteAsync(ct) == 0 ? NotFound() : NoContent();
 
     /// <summary>Découverte ONVIF simulée : propose des caméras non encore enregistrées.</summary>
+    [Authorize(Roles = Roles.Titulaire)]
     [HttpPost("discover")]
     public async Task<List<DiscoveredCamera>> Discover(int pharmacyId, CancellationToken ct)
     {
@@ -117,14 +132,15 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
     [HttpGet("{id:int}/snapshot")]
     public async Task<IActionResult> Snapshot(int id, CancellationToken ct)
     {
-        var camera = await db.Cameras.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        var camera = await Scoped().AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
         return camera is null ? NotFound() : Content(SceneRenderer.Snapshot(camera), "image/svg+xml; charset=utf-8");
     }
 
+    [Authorize(Roles = Roles.Titulaire)]
     [HttpPost("{id:int}/reference-photo")]
     public async Task<IActionResult> ReferencePhoto(int id, CancellationToken ct)
     {
-        var camera = await db.Cameras.FindAsync([id], ct);
+        var camera = await Scoped().FirstOrDefaultAsync(c => c.Id == id, ct);
         if (camera is null) return NotFound();
         camera.ReferencePhotoAt = clock.GetUtcNow().UtcDateTime;
         await db.SaveChangesAsync(ct);
@@ -133,6 +149,7 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
 }
 
 [ApiController]
+[Authorize(Roles = Roles.Titulaire)]
 [Route("api/zones")]
 public class ZonesController(PharmaDbContext db, LiveNotifier notifier) : ControllerBase
 {
@@ -140,7 +157,9 @@ public class ZonesController(PharmaDbContext db, LiveNotifier notifier) : Contro
     public async Task<ActionResult<ZoneDto>> Create(ZoneDto input, CancellationToken ct)
     {
         if (Validate(input) is { } error) return BadRequest(error);
-        if (!await db.Cameras.AnyAsync(c => c.Id == input.CameraId, ct)) return NotFound("Caméra inconnue");
+        var allowed = User.PharmacyIds();
+        if (!await db.Cameras.AnyAsync(c => c.Id == input.CameraId && allowed.Contains(c.Device!.PharmacyId), ct))
+            return NotFound("Caméra inconnue");
         var zone = new Zone { CameraId = input.CameraId, Name = input.Name };
         Apply(zone, input);
         if (input.Rules is null) zone.Rules = ReferenceData.DefaultRules(zone.Type, zone.Category);
@@ -153,7 +172,7 @@ public class ZonesController(PharmaDbContext db, LiveNotifier notifier) : Contro
     public async Task<ActionResult<ZoneDto>> Update(int id, ZoneDto input, CancellationToken ct)
     {
         if (Validate(input) is { } error) return BadRequest(error);
-        var zone = await db.Zones.Include(z => z.Rules).FirstOrDefaultAsync(z => z.Id == id, ct);
+        var zone = await Scoped().Include(z => z.Rules).FirstOrDefaultAsync(z => z.Id == id, ct);
         if (zone is null) return NotFound();
         Apply(zone, input);
         await db.SaveChangesAsync(ct);
@@ -163,7 +182,7 @@ public class ZonesController(PharmaDbContext db, LiveNotifier notifier) : Contro
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var zone = await db.Zones.Include(z => z.Camera!.Device).FirstOrDefaultAsync(z => z.Id == id, ct);
+        var zone = await Scoped().Include(z => z.Camera!.Device).FirstOrDefaultAsync(z => z.Id == id, ct);
         if (zone is null) return NotFound();
         var pharmacyId = zone.Camera!.Device!.PharmacyId;
         // Les alertes actives d'une zone supprimée n'ont plus de sens.
@@ -172,6 +191,12 @@ public class ZonesController(PharmaDbContext db, LiveNotifier notifier) : Contro
         await db.SaveChangesAsync(ct);
         await notifier.AlertsChangedAsync(pharmacyId, ct);
         return NoContent();
+    }
+
+    private IQueryable<Zone> Scoped()
+    {
+        var allowed = User.PharmacyIds();
+        return db.Zones.Where(z => allowed.Contains(z.Camera!.Device!.PharmacyId));
     }
 
     private static string? Validate(ZoneDto z)

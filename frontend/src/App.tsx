@@ -1,17 +1,20 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  BarChart3, Bell, Camera, FileText, History, LayoutDashboard, Package, Settings, SquareDashed,
+  BarChart3, Bell, Camera, FileText, History, LayoutDashboard, LogOut, Package, Settings, SquareDashed,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { api } from './api/client'
-import type { Period, Pharmacy } from './api/types'
-import { QueryState } from './components/ui'
+import type { CurrentUser, Period, Pharmacy } from './api/types'
+import { Button, Card, QueryState } from './components/ui'
 import { formatTime } from './lib/format'
+import { endSession } from './lib/session'
 import { useLive } from './lib/useLive'
+import Alerts from './pages/Alerts'
 import Cameras from './pages/Cameras'
 import ComingSoon from './pages/ComingSoon'
 import Dashboard from './pages/Dashboard'
+import Login from './pages/Login'
 
 const NAV = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -35,7 +38,19 @@ function stored(key: string) {
   try { return localStorage.getItem(key) } catch { return null }
 }
 
+const IMPLEMENTED = ['/', '/cameras', '/alertes']
+
 export default function App() {
+  const me = useQuery({ queryKey: ['me'], queryFn: api.me, staleTime: Infinity, refetchInterval: false })
+  if (me.data === undefined) return <div className="p-6"><Card><QueryState error={me.error} /></Card></div>
+  return me.data ? <Shell user={me.data} /> : <Login />
+}
+
+function Shell({ user }: { user: CurrentUser }) {
+  const client = useQueryClient()
+  const logout = async () => {
+    try { await api.logout() } finally { endSession(client) }
+  }
   const pharmacies = useQuery({ queryKey: ['pharmacies'], queryFn: api.pharmacies, refetchInterval: 15_000 })
   const [selected, setSelected] = useState(() => Number(stored('pharmacy')) || 0)
   const [period, setPeriod] = useState<Period>('today')
@@ -74,13 +89,25 @@ export default function App() {
             <span className={`size-2.5 rounded-full ${connected ? 'animate-pulse bg-brand' : 'bg-danger'}`} />
             {connected ? 'En direct' : 'Hors connexion'}
           </span>
+          <div className="flex items-center gap-2 border-l border-line pl-3">
+            <p className="text-sm leading-tight">
+              <span className="block font-medium">{user.name}</span>
+              <span className="text-muted">{user.role === 'Titulaire' ? 'Titulaire' : 'Équipe'}</span>
+            </p>
+            <Button aria-label="Se déconnecter" title="Se déconnecter" onClick={() => void logout()}>
+              <LogOut size={16} />
+            </Button>
+          </div>
         </header>
         <main className="p-4 lg:p-6">
           {!pharmacy ? <QueryState error={pharmacies.error} /> : (
             <Routes>
               <Route path="/" element={<Dashboard pharmacy={pharmacy} period={period} />} />
-              <Route path="/cameras" element={<Cameras key={pharmacy.id} pharmacyId={pharmacy.id} />} />
-              {NAV.slice(2).map((n) => <Route key={n.to} path={n.to} element={<ComingSoon title={n.label} />} />)}
+              <Route path="/cameras" element={
+                <Cameras key={pharmacy.id} pharmacyId={pharmacy.id} canEdit={user.role === 'Titulaire'} />
+              } />
+              <Route path="/alertes" element={<Alerts key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
+              {NAV.filter((n) => !IMPLEMENTED.includes(n.to)).map((n) => <Route key={n.to} path={n.to} element={<ComingSoon title={n.label} />} />)}
               <Route path="*" element={<ComingSoon title="Page introuvable" />} />
             </Routes>
           )}

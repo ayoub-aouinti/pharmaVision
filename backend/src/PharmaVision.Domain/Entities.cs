@@ -8,6 +8,20 @@ public enum AlertStatus { Open, Acknowledged, Resolved }
 public enum AlertSeverity { Medium, High }
 public enum NotificationChannel { Dashboard, Mobile, WhatsApp }
 
+public enum UserRole { Titulaire, Equipe }
+
+public class User
+{
+    public int Id { get; set; }
+    /// <summary>Toujours en minuscules.</summary>
+    public required string Email { get; set; }
+    public required string DisplayName { get; set; }
+    public string PasswordHash { get; set; } = "";
+    public UserRole Role { get; set; }
+    /// <summary>Officines auxquelles le compte donne accès.</summary>
+    public List<int> PharmacyIds { get; set; } = [];
+}
+
 public class Pharmacy
 {
     public int Id { get; set; }
@@ -110,6 +124,9 @@ public class Alert
     public AlertStatus Status { get; set; }
     public string? HandledBy { get; set; }
     public string? ActionTaken { get; set; }
+    public DateTime? AcknowledgedAt { get; set; }
+    /// <summary>Null pour une clôture automatique (condition disparue).</summary>
+    public string? ResolvedBy { get; set; }
 }
 
 public class Sale

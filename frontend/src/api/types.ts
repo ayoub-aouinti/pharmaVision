@@ -75,8 +75,41 @@ export interface Alert {
   detail: string
   startedAt: string
   status: AlertStatus
+  endedAt: string | null
   handledBy: string | null
   actionTaken: AlertAction | null
+  acknowledgedAt: string | null
+  /** Null pour une clôture automatique. */
+  resolvedBy: string | null
+}
+
+export interface AlertStats {
+  total: number
+  active: number
+  resolved: number
+  autoResolved: number
+  avgAcknowledgeSeconds: number | null
+  avgResolutionSeconds: number | null
+}
+
+export interface AlertPage {
+  items: Alert[]
+  total: number
+  page: number
+  pageSize: number
+  stats: AlertStats
+}
+
+export interface AlertFilters {
+  state: 'all' | 'active' | 'resolved'
+  kind: AlertKind | ''
+  severity: Alert['severity'] | ''
+}
+
+export interface CurrentUser {
+  name: string
+  email: string
+  role: 'Titulaire' | 'Equipe'
 }
 
 export interface Point {

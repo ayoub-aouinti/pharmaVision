@@ -50,8 +50,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-export default function ZoneForm({ zone, dirty, saving, error, onChange, onSave, onCancel, onDelete }: {
+export default function ZoneForm({ zone, readOnly, dirty, saving, error, onChange, onSave, onCancel, onDelete }: {
   zone: Zone
+  readOnly?: boolean
   dirty: boolean
   saving: boolean
   error: string | null
@@ -75,6 +76,7 @@ export default function ZoneForm({ zone, dirty, saving, error, onChange, onSave,
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      <fieldset disabled={readOnly} className="space-y-3">
       <Field label="Nom">
         <input className="field" required maxLength={80} value={zone.name} autoFocus={zone.id === 0}
           onChange={(e) => set({ name: e.target.value })} />
@@ -153,13 +155,17 @@ export default function ZoneForm({ zone, dirty, saving, error, onChange, onSave,
         </fieldset>
       )}
 
+      </fieldset>
+
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <div className="flex flex-wrap items-center gap-2 pt-1">
-        <Button type="submit" variant="primary" disabled={!dirty || saving}>
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </Button>
+        {!readOnly && (
+          <Button type="submit" variant="primary" disabled={!dirty || saving}>
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </Button>
+        )}
         <Button onClick={onCancel}>{dirty ? 'Annuler' : 'Fermer'}</Button>
-        {zone.id !== 0 && (
+        {!readOnly && zone.id !== 0 && (
           <Button variant="danger" className="ml-auto" onClick={onDelete} disabled={saving}>
             <Trash2 size={15} /> Supprimer
           </Button>

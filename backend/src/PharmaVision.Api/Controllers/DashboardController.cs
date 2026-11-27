@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PharmaVision.Api.Security;
 using PharmaVision.Api.Services;
 using PharmaVision.Domain;
 using PharmaVision.Infrastructure;
@@ -18,7 +19,9 @@ public class PharmaciesController(PharmaDbContext db, TimeProvider clock) : Cont
     [HttpGet]
     public async Task<List<PharmacySummary>> List(CancellationToken ct)
     {
-        var pharmacies = await db.Pharmacies.AsNoTracking().Include(p => p.Devices).OrderBy(p => p.Id).ToListAsync(ct);
+        var allowed = User.PharmacyIds();
+        var pharmacies = await db.Pharmacies.AsNoTracking().Where(p => allowed.Contains(p.Id))
+            .Include(p => p.Devices).OrderBy(p => p.Id).ToListAsync(ct);
         var alerts = await db.Alerts.Where(a => a.Status != AlertStatus.Resolved)
             .GroupBy(a => a.PharmacyId)
             .Select(g => new { g.Key, Count = g.Count() })

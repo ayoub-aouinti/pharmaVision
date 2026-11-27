@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using PharmaVision.Api.Security;
 using PharmaVision.Domain;
 
 namespace PharmaVision.Api.Hubs;
@@ -7,7 +8,9 @@ public class LiveHub : Hub
 {
     public static string Group(int pharmacyId) => $"pharmacy-{pharmacyId}";
 
-    public Task Join(int pharmacyId) => Groups.AddToGroupAsync(Context.ConnectionId, Group(pharmacyId));
+    public Task Join(int pharmacyId) => Context.User?.CanAccess(pharmacyId) == true
+        ? Groups.AddToGroupAsync(Context.ConnectionId, Group(pharmacyId))
+        : throw new HubException("Accès refusé à cette pharmacie");
 
     public Task Leave(int pharmacyId) => Groups.RemoveFromGroupAsync(Context.ConnectionId, Group(pharmacyId));
 }
