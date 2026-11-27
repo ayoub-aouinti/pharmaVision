@@ -50,6 +50,9 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
             var daily = i < ReferenceData.Sites.Length ? ReferenceData.Sites[i].DailyVisitors : 300;
             var tz = TimeZoneInfo.FindSystemTimeZoneById(pharmacy.TimeZone);
             var (events, sales) = Generate(new Random(seed + i + (int)(from.Ticks % 100_003)), zones, tz, daily, from, now);
+            // Démonstration : la première officine démarre avec un linéaire en rupture.
+            if (firstRun && i == 0 && zones.FirstOrDefault(z => z.Type == ZoneType.Shelf) is { } empty)
+                events.Add(new IngestEvent(now, empty.Id, EventType.Fill, 22, null));
             await CopyAsync(pharmacy.Id, events, sales, ct);
             written += events.Count;
 

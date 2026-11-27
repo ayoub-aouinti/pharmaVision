@@ -2,5 +2,31 @@
   "name": "pharmavision-web",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build", "preview": "vite preview" }
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@microsoft/signalr": "^11.0.0",
+    "@tanstack/react-query": "^5.108.4",
+    "konva": "^10.11.0",
+    "lucide-react": "^1.82.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-konva": "^19.3.2",
+    "react-router-dom": "^7.18.7",
+    "recharts": "^3.11.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.8"
+  }
 }

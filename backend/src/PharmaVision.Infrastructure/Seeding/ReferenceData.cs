@@ -53,8 +53,8 @@ public static class ReferenceData
         Cam(site, 4, "Rayons latéraux", "Hikvision", "aisle", CameraStatus.Online,
         [
             NewZone("Solaires", ZoneType.Shelf, "Solaires", "SVR, Avène, Vichy", Rect(0.03, 0.22, 0.29, 0.56), (8, 0, 4, 3)),
-            NewZone("Orthopédie", ZoneType.Shelf, "Orthopédie", "Orliman, Thuasne", Rect(0.36, 0.22, 0.28, 0.56), (0, 3, 4, 3)),
-            NewZone("Médicaments conseil", ZoneType.Shelf, "Médicaments conseil", "Doliprane, Humex, Gaviscon", Rect(0.68, 0.22, 0.29, 0.56), (8, 3, 2, 3)),
+            NewZone("Orthopédie", ZoneType.Shelf, "Orthopédie", "Orliman, Thuasne", Rect(0.36, 0.22, 0.28, 0.56), (8, 3, 2, 3)),
+            NewZone("Médicaments conseil", ZoneType.Shelf, "Médicaments conseil", "Doliprane, Humex, Gaviscon", Rect(0.68, 0.22, 0.29, 0.56), (0, 3, 4, 3)),
         ]),
         // La caméra de réserve de la première officine est volontairement hors ligne.
         Cam(site, 5, "Réserve", "Dahua", "storage", site == 1 ? CameraStatus.Offline : CameraStatus.Online,
