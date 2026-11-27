@@ -49,6 +49,7 @@ builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<ReportBuilder>();
 builder.Services.AddScoped<HistoryService>();
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<PlacementService>();
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddHostedService<AlertEngine>();
 builder.Services.AddHostedService<RetentionService>();

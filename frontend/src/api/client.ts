@@ -1,7 +1,7 @@
 import type {
   Alert, AlertAction, AlertContext, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DayReplay, Device, DeviceKey, DiscoveredCamera, HeatCell,
   HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ReportFormat, ReportKind, ShelfRow, Zone, ZoneDetail, ZoneRow,
-  NewUser, PharmacySettings, User, UserChanges, CatalogImportReport, SalesImport, SalesImportReport,
+  NewUser, PharmacySettings, User, UserChanges, CatalogImportReport, SalesImport, SalesImportReport, PlacementReport,
 } from './types'
 
 export class ApiError extends Error {
@@ -109,6 +109,8 @@ export const api = {
   deleteImport: (id: number) => request<void>(`/sales/imports/${id}`, 'DELETE'),
   importCatalog: (file: File, dryRun: boolean) =>
     request<CatalogImportReport>(`/catalog/import?dryRun=${dryRun}`, 'POST', upload(file)),
+  placement: (id: number, p: Period, untouched = 120) =>
+    request<PlacementReport>(`/analytics/placement?pharmacyId=${id}&period=${p}&untouched=${untouched}`),
   alerts: (id: number) => request<Alert[]>(`/alerts?pharmacyId=${id}&limit=100`),
   alertAction: (id: number, action: AlertAction) => request<Alert>(`/alerts/${id}/action`, 'POST', { action }),
   cameras: (id: number) => request<Camera[]>(`/cameras?pharmacyId=${id}`),

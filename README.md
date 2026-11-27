@@ -31,6 +31,17 @@ Au premier démarrage, l'API crée le schéma puis génère 60 jours d'historiqu
 
 Tout en conteneurs : `docker compose --profile app up --build`, puis http://localhost:5175.
 
+## Le but : le placement
+
+PharmaVision détermine quels rayons et quels médicaments sont chauds ou froids et propose quoi déplacer. L'écran « Chaud & froid » donne :
+
+- la **température** de chaque rayon : moitié contacts avec les produits (caméras), moitié unités vendues (caisse), rapportés au meilleur rayon de l'officine ;
+- les **rayons sans contact** pendant une durée choisie (30 min à 4 h) d'ouverture ;
+- des **propositions** (échanger, rapprocher du passage, rendre visible, présenter autrement, conseiller, réassortir), issues de règles lisibles dans [Placement.cs](backend/src/PharmaVision.Domain/Placement.cs) ;
+- les médicaments qui partent le mieux et ceux qui dorment, d'après la caisse.
+
+La caméra juge un rayon, pas une boîte. Les contacts avec les produits sont aujourd'hui **simulés** : le boîtier réel ne les détecte pas encore.
+
 ## Comptes de démonstration
 
 Créés au démarrage en développement ; mot de passe commun défini par `Seed:DemoPassword` dans `appsettings.Development.json` (`Demo-Pharma-2026`).

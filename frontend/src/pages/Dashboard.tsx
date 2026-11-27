@@ -1,8 +1,10 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Download } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Period, Pharmacy } from '../api/types'
-import { Button } from '../components/ui'
+import { Button, Card, QueryState } from '../components/ui'
+import AdviceList from '../features/placement/AdviceList'
 import Activity from '../features/dashboard/Activity'
 import AlertsPanel from '../features/dashboard/AlertsPanel'
 import Brief from '../features/dashboard/Brief'
@@ -27,6 +29,7 @@ export default function Dashboard({ pharmacy, period }: { pharmacy: Pharmacy; pe
   const heatmap = useQuery({ queryKey: ['heatmap', id, period], queryFn: () => api.heatmap(id, period), ...options })
   const hourly = useQuery({ queryKey: ['hourly', id, period], queryFn: () => api.hourly(id, period), ...options })
   const cameras = useQuery({ queryKey: ['cameras', id], queryFn: () => api.cameras(id), refetchInterval: 10_000 })
+  const placement = useQuery({ queryKey: ['analytics', 'placement', id, period, '120'], queryFn: () => api.placement(id, period), ...options })
   const alerts = useQuery({ queryKey: ['alerts', id], queryFn: () => api.alerts(id), refetchInterval: 10_000 })
 
   const exportable = kpis.data && shelves.data && hourly.data
@@ -49,8 +52,13 @@ export default function Dashboard({ pharmacy, period }: { pharmacy: Pharmacy; pe
       </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <AlertsPanel query={alerts} timeZone={pharmacy.timeZone} />
-        <FloorPlan heatmap={heatmap} shelves={shelves} alerts={alerts.data ?? []} />
+        <FloorPlan heatmap={heatmap} shelves={shelves} alerts={alerts.data ?? []} placement={placement.data?.shelves ?? []} />
       </div>
+      <Card title="Quoi déplacer ou changer ?"
+        aside={<Link to="/placement" className="text-sm font-semibold text-brand-dark hover:underline">Toutes les propositions</Link>}>
+        {!placement.data ? <QueryState error={placement.error} />
+          : <AdviceList advice={placement.data.advice.slice(0, 2)} />}
+      </Card>
       <Activity kpis={kpis} hourly={hourly} period={period} />
       <div className="grid gap-5 xl:grid-cols-3">
         <ShelfTable query={shelves} className="xl:col-span-2" />

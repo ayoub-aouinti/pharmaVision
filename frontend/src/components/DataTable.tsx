@@ -31,7 +31,7 @@ export function DataTable({ headers, rows, empty }: {
 
 export function Stat({ label, value, note }: { label: string; value: string; note?: ReactNode }) {
   return (
-    <section className="rounded-card border border-line bg-white p-4">
+    <section className="rounded-card bg-white p-5">
       <p className="text-sm text-muted">{label}</p>
       <p className="mt-1 font-title text-3xl font-semibold">{value}</p>
       {note && <p className="mt-1 text-xs text-muted">{note}</p>}

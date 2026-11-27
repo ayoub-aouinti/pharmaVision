@@ -1,5 +1,15 @@
 /** Les mots de l'application, expliqués simplement. Utilisés par les bulles d'aide et la page Aide. */
 export const GLOSSARY = {
+  hot: {
+    word: 'Rayon chaud ou froid',
+    meaning: 'Chaud : on y touche et on y achète beaucoup, comparé à vos autres rayons. Froid : l’inverse.',
+    use: 'Décider quoi mettre aux meilleures places et quoi déplacer.',
+  },
+  untouched: {
+    word: 'Rayon sans contact',
+    meaning: 'Aucun produit n’a été touché pendant une longue durée, alors que la pharmacie était ouverte.',
+    use: 'Repérer les emplacements qui dorment.',
+  },
   visitors: {
     word: 'Visiteur',
     meaning: 'Une personne qui franchit la porte d’entrée.',
@@ -32,7 +42,7 @@ export const GLOSSARY = {
   },
   pickup: {
     word: 'Prise en main',
-    meaning: 'Un client touche ou prend un produit. Aujourd’hui seulement simulé : les caméras réelles ne le mesurent pas encore.',
+    meaning: 'Un client touche ou prend un produit du rayon. Aujourd’hui seulement simulé : le boîtier réel ne le détecte pas encore.',
     use: 'Comparer l’intérêt pour les produits.',
   },
   fill: {

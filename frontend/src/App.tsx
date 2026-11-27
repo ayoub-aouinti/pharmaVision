@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Bell, Camera, CircleHelp, Cross, FileText, History, House, LogOut, Package, Settings, SquareDashed,
+  Bell, Camera, CircleHelp, Cross, FileText, Flame, History, House, LogOut, Package, Settings, SquareDashed,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Route, Routes } from 'react-router-dom'
@@ -17,6 +17,7 @@ import Help from './pages/Help'
 import HistoryPage from './pages/History'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import Placement from './pages/Placement'
 import Products from './pages/Products'
 import Reports from './pages/Reports'
 import SettingsPage from './pages/Settings'
@@ -28,6 +29,7 @@ const NAV = [
     group: 'Chaque jour',
     items: [
       { to: '/', label: 'Accueil', icon: House },
+      { to: '/placement', label: 'Chaud & froid', icon: Flame },
       { to: '/alertes', label: 'Alertes', icon: Bell },
       { to: '/historique', label: 'Revoir une journée', icon: History },
     ],
@@ -74,7 +76,7 @@ function Shell({ user }: { user: CurrentUser }) {
   }
   const pharmacies = useQuery({ queryKey: ['pharmacies'], queryFn: api.pharmacies, refetchInterval: 15_000 })
   const [selected, setSelected] = useState(() => Number(stored('pharmacy')) || 0)
-  const [period, setPeriod] = useState<Period>('today')
+  const [period, setPeriod] = useState<Period>('7d')
   const pharmacy = pharmacies.data?.find((p) => p.id === selected) ?? pharmacies.data?.[0]
   const connected = useLive(pharmacy?.id, period)
 
@@ -129,6 +131,7 @@ function Shell({ user }: { user: CurrentUser }) {
               <Route path="/parametres" element={
                 <SettingsPage user={user} pharmacy={pharmacy} pharmacies={pharmacies.data ?? []} />
               } />
+              <Route path="/placement" element={<Placement key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               <Route path="/aide" element={<Help />} />
               <Route path="/alertes" element={<Alerts key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               <Route path="*" element={<NotFound />} />

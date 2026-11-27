@@ -6,8 +6,19 @@ namespace PharmaVision.Api.Controllers;
 /// <summary>Analyse détaillée par zone et par produit ; period = live | today | 7d | 30d.</summary>
 [ApiController]
 [Route("api/analytics")]
-public class AnalyticsController(AnalyticsService analytics) : ControllerBase
+public class AnalyticsController(AnalyticsService analytics, PlacementService placement) : ControllerBase
 {
+    /// <summary>Rayons chauds et froids, rayons sans contact et propositions de placement.</summary>
+    /// <param name="untouched">Durée sans contact à signaler, en minutes.</param>
+    [HttpGet("placement")]
+    public async Task<ActionResult<PlacementReport>> Placement(
+        int pharmacyId, string? period, CancellationToken ct, int untouched = 120)
+    {
+        if (untouched is < 15 or > 720) return BadRequest("La durée sans contact va de 15 à 720 minutes");
+        return await placement.AnalyzeAsync(pharmacyId, PeriodRange.Parse(period), untouched, ct) is { } result
+            ? result : NotFound();
+    }
+
     [HttpGet("zones")]
     public async Task<ActionResult<List<ZoneRow>>> Zones(int pharmacyId, string? period, CancellationToken ct) =>
         await analytics.ZonesAsync(pharmacyId, PeriodRange.Parse(period), ct) is { } result ? result : NotFound();

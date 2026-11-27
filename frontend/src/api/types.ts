@@ -240,6 +240,56 @@ export interface SalesImport {
   lastDay: string
 }
 
+export type Temperature = 'Hot' | 'Warm' | 'Cold' | 'Unknown'
+export type AdviceKind = 'Swap' | 'MoveCloser' | 'Visibility' | 'Access' | 'Advise' | 'CheckStock' | 'UseHotSpot'
+
+export interface Advice {
+  kind: AdviceKind
+  zoneId: number
+  otherZoneId: number | null
+  title: string
+  reason: string
+  action: string
+}
+
+export interface PlacementShelf {
+  zoneId: number
+  name: string
+  category: string | null
+  temperature: Temperature
+  score: number
+  passes: number
+  stops: number
+  pickups: number
+  units: number
+  engagement: number
+  pickupRate: number
+  longestUntouchedMinutes: number
+  untouchedTimes: number
+  sinceLastTouchMinutes: number | null
+  findings: { kind: string; text: string }[]
+}
+
+export interface PlacementProduct {
+  code: string
+  name: string
+  brand: string | null
+  family: string
+  units: number
+  revenue: number
+  previousUnits: number
+}
+
+export interface PlacementReport {
+  untouchedLimitMinutes: number
+  shelves: PlacementShelf[]
+  advice: Advice[]
+  hotProducts: PlacementProduct[]
+  coldProducts: PlacementProduct[]
+  /** Rayons dont le boîtier ne détecte pas les contacts. */
+  notMeasured: string[]
+}
+
 export interface Alert {
   id: number
   zoneId: number | null

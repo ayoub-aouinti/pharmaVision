@@ -3,12 +3,13 @@ import { Card } from '../components/ui'
 import { GLOSSARY } from '../lib/glossary'
 
 const STEPS = [
-  { title: 'Les caméras regardent', text: 'Les caméras déjà installées filment la pharmacie. La vidéo reste sur place.' },
-  { title: 'Le boîtier compte', text: 'Un petit ordinateur compte les passages, les arrêts et l’attente. Il ne reconnaît personne.' },
-  { title: 'Vous agissez', text: 'L’application vous montre quoi faire : remplir un rayon, ouvrir un poste, conseiller un client.' },
+  { title: 'Les caméras observent les rayons', text: 'Où les clients passent, où ils s’arrêtent, quels rayons ils touchent. La vidéo reste sur place et personne n’est reconnu.' },
+  { title: 'La caisse dit ce qui se vend', text: 'PharmaVision rapproche les ventes de chaque famille de médicaments des gestes observés devant son rayon.' },
+  { title: 'Vous changez le placement', text: 'L’application montre les rayons chauds et froids et propose quoi échanger, déplacer ou mieux présenter.' },
 ]
 
 const SCREENS = [
+  { to: '/placement', name: 'Chaud & froid', answer: 'Quels rayons et médicaments marchent, lesquels dorment, et quoi déplacer ?' },
   { to: '/', name: 'Accueil', answer: 'Que dois-je faire maintenant, et comment se passe la journée ?' },
   { to: '/alertes', name: 'Alertes', answer: 'Qu’est-ce qui s’est passé, et qui s’en est occupé ?' },
   { to: '/historique', name: 'Revoir une journée', answer: 'À quelle heure a-t-on manqué de monde ou de produits ?' },
