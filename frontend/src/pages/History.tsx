@@ -55,6 +55,36 @@ export default function History({ pharmacy }: { pharmacy: Pharmacy }) {
   )
 }
 
+/** Chaque barre est une alerte, placée à son heure : on voit d'un coup d'œil les moments tendus. */
+function AlertTimeline({ data, timeZone, onPick }: { data: DayReplay; timeZone: string; onPick: (index: number) => void }) {
+  const from = new Date(data.frames[0].start).getTime()
+  const to = new Date(data.frames[data.frames.length - 1].start).getTime() + data.stepMinutes * 60_000
+  const share = (time: number) => Math.min(100, Math.max(0, ((time - from) / (to - from)) * 100))
+  const shown = data.alerts.filter((a) => new Date(a.startedAt).getTime() < to
+    && (!a.endedAt || new Date(a.endedAt).getTime() > from))
+
+  return (
+    <div className="mt-4">
+      <div className="relative h-5 rounded-full bg-bg" role="group" aria-label="Alertes de la journée">
+        {shown.map((alert) => {
+          const left = share(new Date(alert.startedAt).getTime())
+          const right = share(alert.endedAt ? new Date(alert.endedAt).getTime() : to)
+          const label = `${alert.title}, à ${formatTime(alert.startedAt, timeZone)}`
+          return (
+            <button key={alert.id} type="button" title={label} aria-label={label}
+              onClick={() => onPick(Math.min(data.frames.length - 1, Math.floor((left / 100) * data.frames.length)))}
+              className={`absolute top-0.5 h-4 min-w-2 rounded-full ${alert.severity === 'High' ? 'bg-danger' : 'bg-warn'} opacity-85 hover:opacity-100`}
+              style={{ left: `${left}%`, width: `${Math.max(0.6, right - left)}%` }} />
+          )
+        })}
+      </div>
+      <p className="mt-1.5 text-xs text-muted">
+        {shown.length === 0 ? 'Aucune alerte ce jour-là.' : `${shown.length} alerte(s) ce jour-là. Touchez une barre pour y aller.`}
+      </p>
+    </div>
+  )
+}
+
 function Replay({ data, timeZone }: { data: DayReplay; timeZone: string }) {
   const last = data.frames.length - 1
   const [position, setPosition] = useState(0)
@@ -102,6 +132,7 @@ function Replay({ data, timeZone }: { data: DayReplay; timeZone: string }) {
             {SPEEDS.map((s) => <option key={s.ms} value={s.ms}>{s.label}</option>)}
           </select>
         </div>
+        <AlertTimeline data={data} timeZone={timeZone} onPick={(i) => { setPlaying(false); setPosition(i) }} />
       </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

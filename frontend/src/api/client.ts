@@ -1,7 +1,7 @@
 import type {
   Alert, AlertAction, AlertContext, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DayReplay, Device, DeviceKey, DiscoveredCamera, HeatCell,
   HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ReportFormat, ReportKind, ShelfRow, Zone, ZoneDetail, ZoneRow,
-  NewUser, PharmacySettings, User, UserChanges,
+  NewUser, PharmacySettings, User, UserChanges, CatalogImportReport, SalesImport, SalesImportReport,
 } from './types'
 
 export class ApiError extends Error {
@@ -11,10 +11,12 @@ export class ApiError extends Error {
 }
 
 async function send(path: string, method = 'GET', body?: unknown) {
+  // Un formulaire (envoi de fichier) fixe lui-même son type de contenu.
+  const json = body !== undefined && !(body instanceof FormData)
   const response = await fetch(`/api${path}`, {
     method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: json ? { 'Content-Type': 'application/json' } : undefined,
+    body: json ? JSON.stringify(body) : (body as FormData | undefined),
   })
   if (!response.ok) {
     throw new ApiError(errorMessage(await response.text()) || `Erreur ${response.status}`, response.status)
@@ -43,6 +45,12 @@ function errorMessage(text: string) {
   } catch {
     return text
   }
+}
+
+function upload(file: File) {
+  const form = new FormData()
+  form.set('file', file)
+  return form
 }
 
 const scoped = (path: string, pharmacyId: number, period: Period) =>
@@ -94,6 +102,13 @@ export const api = {
   historyDay: (id: number, date: string) =>
     request<DayReplay>(`/history/day?pharmacyId=${id}${date && `&date=${date}`}`),
   alertContext: (id: number) => request<AlertContext>(`/alerts/${id}/context`),
+  importSales: (pharmacyId: number, file: File, replace: boolean, dryRun: boolean) =>
+    request<SalesImportReport>(
+      `/sales/import?pharmacyId=${pharmacyId}&replace=${replace}&dryRun=${dryRun}`, 'POST', upload(file)),
+  salesImports: (pharmacyId: number) => request<SalesImport[]>(`/sales/imports?pharmacyId=${pharmacyId}`),
+  deleteImport: (id: number) => request<void>(`/sales/imports/${id}`, 'DELETE'),
+  importCatalog: (file: File, dryRun: boolean) =>
+    request<CatalogImportReport>(`/catalog/import?dryRun=${dryRun}`, 'POST', upload(file)),
   alerts: (id: number) => request<Alert[]>(`/alerts?pharmacyId=${id}&limit=100`),
   alertAction: (id: number, action: AlertAction) => request<Alert>(`/alerts/${id}/action`, 'POST', { action }),
   cameras: (id: number) => request<Camera[]>(`/cameras?pharmacyId=${id}`),

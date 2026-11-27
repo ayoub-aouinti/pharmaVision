@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CurrentUser, Pharmacy } from '../api/types'
 import AccountForm from '../features/settings/AccountForm'
 import DevicesPanel from '../features/settings/DevicesPanel'
+import ImportPanel from '../features/settings/ImportPanel'
 import PharmacyForm from '../features/settings/PharmacyForm'
 import UsersPanel from '../features/settings/UsersPanel'
 
@@ -10,6 +11,7 @@ const TABS = [
   { id: 'users', label: 'Comptes', ownerOnly: true },
   { id: 'pharmacy', label: 'Officine & données', ownerOnly: true },
   { id: 'devices', label: 'Boîtiers', ownerOnly: true },
+  { id: 'import', label: 'Import caisse', ownerOnly: true },
 ]
 
 export default function Settings({ user, pharmacy, pharmacies }: {
@@ -36,6 +38,7 @@ export default function Settings({ user, pharmacy, pharmacies }: {
       {tab === 'users' && <UsersPanel me={user} pharmacies={pharmacies} />}
       {tab === 'pharmacy' && <PharmacyForm key={pharmacy.id} pharmacy={pharmacy} />}
       {tab === 'devices' && <DevicesPanel key={pharmacy.id} pharmacy={pharmacy} />}
+      {tab === 'import' && <ImportPanel key={pharmacy.id} pharmacy={pharmacy} />}
     </div>
   )
 }

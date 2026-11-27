@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Pencil } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Period, Pharmacy, ZoneRow, ZoneType } from '../api/types'
 import { DataTable, Stat } from '../components/DataTable'
@@ -13,7 +13,8 @@ import { formatCount, formatDuration, formatPercent, ZONE_TYPES } from '../lib/f
 
 export default function Zones({ pharmacy, period }: { pharmacy: Pharmacy; period: Period }) {
   const [type, setType] = useState<ZoneType | ''>('')
-  const [selected, setSelected] = useState<number | null>(null)
+  const [search] = useSearchParams()
+  const [selected, setSelected] = useState<number | null>(() => Number(search.get('zone')) || null)
   const zones = useQuery({
     queryKey: ['analytics', 'zones', pharmacy.id, period],
     queryFn: () => api.zoneRows(pharmacy.id, period),

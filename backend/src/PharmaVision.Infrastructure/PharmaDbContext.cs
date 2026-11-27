@@ -27,6 +27,7 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
     public DbSet<ZoneEvent> Events => Set<ZoneEvent>();
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<SalesImport> SalesImports => Set<SalesImport>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<CameraImage> CameraImages => Set<CameraImage>();
     public DbSet<HourlyAggregate> Hourly => Set<HourlyAggregate>();
@@ -79,6 +80,10 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
             .OnDelete(DeleteBehavior.Cascade);
         b.Entity<Product>().HasKey(p => p.Code);
         b.Entity<Product>().Property(p => p.Price).HasPrecision(12, 3);
+
+        b.Entity<SalesImport>().HasOne<Pharmacy>().WithMany().HasForeignKey(i => i.PharmacyId);
+        b.Entity<SalesImport>().HasMany(i => i.Sales).WithOne().HasForeignKey(s => s.ImportId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         b.Entity<Sale>().HasIndex(s => new { s.PharmacyId, s.Ts });
         b.Entity<Sale>().Property(s => s.Amount).HasPrecision(12, 3);

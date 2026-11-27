@@ -1,14 +1,17 @@
-import { X } from 'lucide-react'
-import { useEffect, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { CircleHelp, X } from 'lucide-react'
+import { useEffect, useId, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
-export function Card({ title, aside, children, className = '' }: {
-  title?: string; aside?: ReactNode; children: ReactNode; className?: string
+export function Card({ title, help, aside, children, className = '' }: {
+  title?: string; help?: string; aside?: ReactNode; children: ReactNode; className?: string
 }) {
   return (
-    <section className={`min-w-0 rounded-card border border-line bg-white p-4 ${className}`}>
+    <section className={`min-w-0 rounded-card bg-white p-5 ${className}`}>
       {title && (
-        <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-semibold">{title}</h2>
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-lg font-semibold">{title}</h2>
+            {help && <Info text={help} />}
+          </div>
           {aside}
         </header>
       )}
@@ -19,8 +22,8 @@ export function Card({ title, aside, children, className = '' }: {
 
 const VARIANTS = {
   primary: 'bg-brand-dark text-white hover:bg-ink',
-  secondary: 'border border-line bg-white text-ink hover:border-brand',
-  danger: 'border border-line bg-white text-danger hover:border-danger',
+  secondary: 'bg-bg text-ink hover:bg-brand-soft',
+  danger: 'bg-bg text-danger hover:bg-danger/10',
 }
 
 export function Button({ variant = 'secondary', className = '', ...props }:
@@ -28,9 +31,50 @@ export function Button({ variant = 'secondary', className = '', ...props }:
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-1.5 rounded-btn px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-btn px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-45 ${VARIANTS[variant]} ${className}`}
       {...props}
     />
+  )
+}
+
+/** Choix unique parmi quelques options, toutes visibles. */
+export function Segmented<T extends string>({ label, options, value, onChange }: {
+  label: string
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (value: T) => void
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex w-fit max-w-full overflow-x-auto rounded-btn bg-bg p-1">
+      {options.map((o) => (
+        <button key={o.value} type="button" aria-pressed={value === o.value} onClick={() => onChange(o.value)}
+          className={`rounded-md px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors ${value === o.value ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Explication d'un mot ou d'un chiffre, au survol, au clic ou au clavier. */
+export function Info({ text }: { text: string }) {
+  const [open, setOpen] = useState(false)
+  const id = useId()
+  return (
+    <span className="relative inline-flex" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button type="button" aria-label="Explication" aria-expanded={open} aria-describedby={open ? id : undefined}
+        className="rounded-full text-muted hover:text-brand-dark"
+        onClick={(e) => { e.stopPropagation(); setOpen(true) }} onBlur={() => setOpen(false)}
+        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
+        <CircleHelp size={15} />
+      </button>
+      {open && (
+        <span role="tooltip" id={id}
+          className="absolute top-full left-1/2 z-40 mt-1 w-60 -translate-x-1/2 rounded-btn bg-ink p-3 text-left font-sans text-xs leading-relaxed font-normal tracking-normal text-white shadow-xl">
+          {text}
+        </span>
+      )}
+    </span>
   )
 }
 

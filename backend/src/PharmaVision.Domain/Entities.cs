@@ -166,4 +166,20 @@ public class Sale
     public required string Family { get; set; }
     public int Quantity { get; set; }
     public decimal Amount { get; set; }
+    /// <summary>Null pour une vente reçue d'un boîtier ; sinon, le fichier dont elle provient.</summary>
+    public int? ImportId { get; set; }
+}
+
+/// <summary>Un fichier de ventes importé, que l'on peut annuler.</summary>
+public class SalesImport
+{
+    public int Id { get; set; }
+    public int PharmacyId { get; set; }
+    public required string FileName { get; set; }
+    public DateTime ImportedAt { get; set; }
+    public required string ImportedBy { get; set; }
+    public int Rows { get; set; }
+    public DateOnly FirstDay { get; set; }
+    public DateOnly LastDay { get; set; }
+    public List<Sale> Sales { get; set; } = [];
 }

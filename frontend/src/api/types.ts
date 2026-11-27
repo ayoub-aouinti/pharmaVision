@@ -199,6 +199,47 @@ export interface AlertContext {
   points: { start: string; value: number | null }[]
 }
 
+export interface ImportError {
+  line: number
+  message: string
+}
+
+export interface SalesImportReport {
+  importId: number | null
+  rows: number
+  newRows: number
+  duplicates: number
+  tickets: number
+  revenue: number
+  from: string | null
+  to: string | null
+  replaced: number
+  unknownCodes: number
+  unknownExamples: string[]
+  familiesWithoutShelf: string[]
+  errorCount: number
+  errors: ImportError[]
+}
+
+export interface CatalogImportReport {
+  applied: boolean
+  rows: number
+  added: number
+  updated: number
+  errorCount: number
+  errors: ImportError[]
+}
+
+export interface SalesImport {
+  id: number
+  fileName: string
+  importedAt: string
+  importedBy: string
+  rows: number
+  firstDay: string
+  lastDay: string
+}
+
 export interface Alert {
   id: number
   zoneId: number | null

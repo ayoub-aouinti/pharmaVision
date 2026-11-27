@@ -301,6 +301,9 @@ namespace PharmaVision.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("ImportId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PharmacyId")
                         .HasColumnType("integer");
 
@@ -320,9 +323,49 @@ namespace PharmaVision.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ImportId");
+
                     b.HasIndex("PharmacyId", "Ts");
 
                     b.ToTable("Sales");
+                });
+
+            modelBuilder.Entity("PharmaVision.Domain.SalesImport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("FirstDay")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImportedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("LastDay")
+                        .HasColumnType("date");
+
+                    b.Property<int>("PharmacyId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Rows")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PharmacyId");
+
+                    b.ToTable("SalesImports");
                 });
 
             modelBuilder.Entity("PharmaVision.Domain.User", b =>
@@ -556,6 +599,23 @@ namespace PharmaVision.Infrastructure.Migrations
                     b.Navigation("Pharmacy");
                 });
 
+            modelBuilder.Entity("PharmaVision.Domain.Sale", b =>
+                {
+                    b.HasOne("PharmaVision.Domain.SalesImport", null)
+                        .WithMany("Sales")
+                        .HasForeignKey("ImportId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("PharmaVision.Domain.SalesImport", b =>
+                {
+                    b.HasOne("PharmaVision.Domain.Pharmacy", null)
+                        .WithMany()
+                        .HasForeignKey("PharmacyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PharmaVision.Domain.Zone", b =>
                 {
                     b.HasOne("PharmaVision.Domain.Camera", "Camera")
@@ -589,6 +649,11 @@ namespace PharmaVision.Infrastructure.Migrations
             modelBuilder.Entity("PharmaVision.Domain.Pharmacy", b =>
                 {
                     b.Navigation("Devices");
+                });
+
+            modelBuilder.Entity("PharmaVision.Domain.SalesImport", b =>
+                {
+                    b.Navigation("Sales");
                 });
 
             modelBuilder.Entity("PharmaVision.Domain.Zone", b =>

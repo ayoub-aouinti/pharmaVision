@@ -71,6 +71,23 @@ PDF ou Excel pour la période choisie : synthèse, zones, produits et marques, e
 
 « Historique & replay » rejoue une journée par quart d'heure ; chaque alerte montre la courbe de sa zone. Dans Paramètres, chaque officine choisit combien de temps les images d'alerte restent consultables (30 jours par défaut) et les mesures, ventes et alertes sont conservées (24 mois). L'effacement a lieu au démarrage puis une fois par jour ; les totaux horaires anonymes (`events_hourly`) sont gardés.
 
+## Import de la caisse
+
+Paramètres › Import caisse (titulaire). Le fichier est d'abord analysé, puis importé après confirmation ; une seule ligne invalide refuse le fichier entier.
+
+| Fichier | Colonnes obligatoires | Facultatives |
+| --- | --- | --- |
+| Ventes (une ligne par produit d'un ticket) | `date` (avec heure, ou colonne `heure`), `ticket`, `code`, `quantite`, `montant` | `famille` (sinon reprise du catalogue) |
+| Catalogue | `code`, `nom`, `famille` | `marque`, `prix` |
+
+Séparateur `;`, `,` ou tabulation ; UTF-8 ou Windows-1252 ; dates `jj/mm/aaaa hh:mm` ou `aaaa-mm-jj hh:mm`, à l'heure de l'officine ; un seul séparateur décimal par montant. 10 Mo et 100 000 lignes au maximum.
+
+- Réimporter le même fichier n'ajoute rien.
+- Le numéro de ticket est préfixé par sa date, pour les caisses qui recommencent chaque jour.
+- « Remplacer » efface les ventes **non importées** (simulées) des jours couverts ; elles ne reviennent pas si l'import est annulé. Le simulateur continue ensuite d'en produire : l'arrêter avec `docker compose stop simulator`.
+- Le catalogue est commun aux officines : il faut avoir accès à toutes pour le modifier.
+- La famille doit porter le même nom que la catégorie du linéaire pour calculer sa transformation.
+
 ## Brancher un vrai boîtier
 
 Installation et essai sur une vidéo : [edge/README.md](edge/README.md). Une caméra rattachée à un boîtier réel alimente les indicateurs de son officine, mêlés aux données fictives du simulateur : pour un essai propre, utiliser une base neuve ou une officine dont le simulateur est arrêté.
@@ -106,4 +123,4 @@ cd ../edge && python -m pytest -q
 - Clés de boîtier et mot de passe de base codés pour le développement.
 - Gestion du catalogue de produits (il sera alimenté par le logiciel de gestion d’officine).
 - Envoi réel des notifications (le canal est enregistré, rien n'est envoyé).
-- Règle « hors planogramme » et mesure du respect du planogramme, import CSV de la caisse.\n- Envoi automatique hebdomadaire des rapports, période au choix (dates libres).
+- Règle « hors planogramme » et mesure du respect du planogramme.\n- Liaison directe (API) avec le logiciel de gestion d'officine, import du stock.\n- Envoi automatique hebdomadaire des rapports, période au choix (dates libres).

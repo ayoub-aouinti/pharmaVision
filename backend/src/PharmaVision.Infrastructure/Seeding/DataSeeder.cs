@@ -162,22 +162,11 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
             await writer.CompleteAsync(ct);
         }
 
-        await using (var writer = await connection.BeginBinaryImportAsync(
-            """COPY "Sales" ("PharmacyId", "Ts", "TicketNo", "ProductCode", "Family", "Quantity", "Amount") FROM STDIN (FORMAT BINARY)""", ct))
+        await db.CopySalesAsync(sales.Select(s => new Sale
         {
-            foreach (var s in sales)
-            {
-                await writer.StartRowAsync(ct);
-                await writer.WriteAsync(pharmacyId, NpgsqlDbType.Integer, ct);
-                await writer.WriteAsync(s.Ts, NpgsqlDbType.TimestampTz, ct);
-                await writer.WriteAsync(s.TicketNo, NpgsqlDbType.Text, ct);
-                await writer.WriteAsync(s.ProductCode, NpgsqlDbType.Text, ct);
-                await writer.WriteAsync(s.Family, NpgsqlDbType.Text, ct);
-                await writer.WriteAsync(s.Quantity, NpgsqlDbType.Integer, ct);
-                await writer.WriteAsync(s.Amount, NpgsqlDbType.Numeric, ct);
-            }
-            await writer.CompleteAsync(ct);
-        }
+            PharmacyId = pharmacyId, Ts = s.Ts, TicketNo = s.TicketNo, ProductCode = s.ProductCode,
+            Family = s.Family, Quantity = s.Quantity, Amount = s.Amount,
+        }), ct);
     }
 
     private static IEnumerable<Alert> PastAlerts(Random rng, Pharmacy pharmacy, DateTime now)
