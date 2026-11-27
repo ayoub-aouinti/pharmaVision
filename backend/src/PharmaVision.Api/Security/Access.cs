@@ -1,7 +1,11 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 using PharmaVision.Domain;
+using PharmaVision.Infrastructure;
 
 namespace PharmaVision.Api.Security;
 
@@ -13,6 +17,7 @@ public static class Roles
 public static class Access
 {
     public const string PharmacyClaim = "pharmacy";
+    public const string VersionClaim = "version";
 
     public static ClaimsPrincipal ToPrincipal(User user, string scheme)
     {
@@ -21,9 +26,26 @@ public static class Access
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.DisplayName),
             new(ClaimTypes.Role, user.Role.ToString()),
+            new(VersionClaim, user.SecurityVersion.ToString()),
             .. user.PharmacyIds.Select(id => new Claim(PharmacyClaim, id.ToString())),
         ];
         return new ClaimsPrincipal(new ClaimsIdentity(claims, scheme));
+    }
+
+    /// <summary>
+    /// Appelé à chaque requête : une session tombe dès que le compte est supprimé, désactivé ou modifié.
+    /// </summary>
+    public static async Task ValidateSessionAsync(CookieValidatePrincipalContext context)
+    {
+        var db = context.HttpContext.RequestServices.GetRequiredService<PharmaDbContext>();
+        var principal = context.Principal!;
+        var valid = int.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+            && int.TryParse(principal.FindFirstValue(VersionClaim), out var version)
+            && await db.Users.AnyAsync(u => u.Id == id && u.IsActive && u.SecurityVersion == version,
+                context.HttpContext.RequestAborted);
+        if (valid) return;
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(context.Scheme.Name);
     }
 
     public static List<int> PharmacyIds(this ClaimsPrincipal user) =>

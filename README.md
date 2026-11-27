@@ -1,6 +1,6 @@
 # PharmaVision
 
-Analyse commerciale d'officine à partir des caméras existantes. **Itération 1 : toutes les données sont fictives** ; ni caméra ni IA ne sont branchées.
+Analyse commerciale d'officine à partir des caméras existantes. **Les données de démonstration sont fictives.** Un [boîtier Python](edge/README.md) permet de brancher de vraies vidéos : il détecte les personnes sur place et n'envoie que des événements anonymes.
 
 Documents de conception : [docs/](docs/).
 
@@ -11,8 +11,9 @@ Documents de conception : [docs/](docs/).
 | `backend/src/PharmaVision.Domain` | Entités, contrat boîtier ↔ serveur, formules des indicateurs, générateur de visites |
 | `backend/src/PharmaVision.Infrastructure` | EF Core, migrations, hypertable TimescaleDB, données fictives initiales |
 | `backend/src/PharmaVision.Api` | API REST, ingestion, SignalR, moteur d'alertes |
-| `backend/src/PharmaVision.Simulator` | Boîtier local simulé (même API que le futur boîtier réel) |
-| `frontend` | React + TypeScript : connexion, tableau de bord, Caméras, Zones & linéaires, Produits & marques, Alertes, Rapports |
+| `backend/src/PharmaVision.Simulator` | Boîtier local simulé (même API que le boîtier réel) |
+| `edge` | Boîtier local Python : détection de personnes sur vidéo ou flux RTSP |
+| `frontend` | React + TypeScript : connexion, tableau de bord, Caméras, Zones & linéaires, Produits & marques, Alertes, Historique & replay, Rapports, Paramètres |
 
 ## Lancer en développement
 
@@ -41,7 +42,7 @@ Créés au démarrage en développement ; mot de passe commun défini par `Seed:
 | `equipe.sfax@pharmavision.demo` | Équipe | Sfax |
 | `equipe.sousse@pharmavision.demo` | Équipe | Sousse |
 
-Le rôle Équipe consulte le tableau de bord et traite les alertes ; caméras et zones sont en lecture seule et les adresses RTSP lui sont masquées. La session est un cookie `HttpOnly` de 12 heures ; la connexion est limitée à 10 tentatives par minute et par adresse IP.
+Le rôle Équipe consulte le tableau de bord et traite les alertes ; caméras et zones sont en lecture seule et les adresses RTSP lui sont masquées. La session est un cookie `HttpOnly` de 12 heures ; la connexion est limitée à 10 tentatives par minute et par adresse IP, et un compte est bloqué 15 minutes après 5 mots de passe erronés. Désactiver, supprimer ou modifier un compte ferme aussitôt ses sessions. Les comptes se gèrent dans Paramètres.
 
 ## Données fictives
 
@@ -66,15 +67,24 @@ L'écran Zones & linéaires donne, pour chaque zone, ses mesures sur la période
 
 PDF ou Excel pour la période choisie : synthèse, zones, produits et marques, et rapport laboratoire limité à une marque (ventes, visibilité et disponibilité de ses linéaires). Ils sont produits par l'API avec PDFsharp-MigraDoc et ClosedXML (licence MIT). Hors Docker sur Linux, les PDF demandent le paquet `fonts-dejavu-core`.
 
+## Historique et conservation
+
+« Historique & replay » rejoue une journée par quart d'heure ; chaque alerte montre la courbe de sa zone. Dans Paramètres, chaque officine choisit combien de temps les images d'alerte restent consultables (30 jours par défaut) et les mesures, ventes et alertes sont conservées (24 mois). L'effacement a lieu au démarrage puis une fois par jour ; les totaux horaires anonymes (`events_hourly`) sont gardés.
+
 ## Brancher un vrai boîtier
 
-Le boîtier s'authentifie avec l'en-tête `X-Api-Key` :
+Installation et essai sur une vidéo : [edge/README.md](edge/README.md). Une caméra rattachée à un boîtier réel alimente les indicateurs de son officine, mêlés aux données fictives du simulateur : pour un essai propre, utiliser une base neuve ou une officine dont le simulateur est arrêté.
+
+Tant qu'une image de référence n'a pas été reçue, la caméra affiche un décor dessiné ; ensuite, les vignettes d'alerte montrent cette image avec la zone concernée (et non l'instant de l'alerte).
+
+Le boîtier s'authentifie avec l'en-tête `X-Api-Key` (clé créée dans Paramètres › Boîtiers ; seule son empreinte est enregistrée) :
 
 | Appel | Usage |
 | --- | --- |
 | `GET /api/ingest/config` | Zones à analyser, réassorts demandés |
 | `POST /api/ingest/heartbeat` | Signal de présence |
 | `POST /api/ingest/events` | Lot d'événements et de ventes (5 000 lignes maximum) |
+| `PUT /api/ingest/cameras/{id}/image` | Image de référence JPEG (2 Mo maximum) |
 
 Le format est défini dans [Contracts.cs](backend/src/PharmaVision.Domain/Contracts.cs).
 
@@ -83,16 +93,17 @@ Le format est défini dans [Contracts.cs](backend/src/PharmaVision.Domain/Contra
 ```bash
 dotnet test backend
 cd frontend && npm run build
+cd ../edge && python -m pytest -q
 ```
 
 ## Pas encore fait
 
+- Boîtier réel : remplissage des linéaires, prises en main, distinction du personnel, découverte ONVIF, image de l'instant sur les alertes, détection automatique des caméras hors ligne, mise à jour à distance, MQTT.
+
 - **Pas prêt pour une mise en ligne** : pas de HTTPS ; les ports sont limités au poste local.
-- Gestion des comptes (création, changement de mot de passe, verrouillage) : seuls les comptes de démonstration existent. Un changement de droits ne prend effet qu'à la reconnexion.
+- Mot de passe oublié par e-mail, double authentification, journal des actions d'administration.
 - En conteneurs, les sessions sont perdues quand l'API est recréée (clés de chiffrement non conservées). Derrière le proxy web, la limite de tentatives est partagée par tous les postes.
 - Clés de boîtier et mot de passe de base codés pour le développement.
-- Écrans Historique & replay, Paramètres.
 - Gestion du catalogue de produits (il sera alimenté par le logiciel de gestion d’officine).
 - Envoi réel des notifications (le canal est enregistré, rien n'est envoyé).
 - Règle « hors planogramme » et mesure du respect du planogramme, import CSV de la caisse.\n- Envoi automatique hebdomadaire des rapports, période au choix (dates libres).
-- Durées de conservation des données.

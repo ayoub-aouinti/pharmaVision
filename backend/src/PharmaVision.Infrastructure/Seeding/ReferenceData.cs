@@ -26,7 +26,7 @@ public static class ReferenceData
             {
                 Name = $"Boîtier {s.City}",
                 Version = "0.1.0-sim",
-                ApiKey = DevApiKey(i + 1),
+                ApiKeyHash = DeviceKeys.Hash(DevApiKey(i + 1)),
                 Cameras = Cameras(i + 1),
             },
         ],

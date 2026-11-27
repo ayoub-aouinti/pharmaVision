@@ -20,8 +20,7 @@ public static class SceneRenderer
         var center = (X: Width * 0.5, Y: Height * 0.6);
         if (zone is { Polygon.Count: > 1 })
         {
-            var points = string.Join(' ', zone.Polygon.Select(p => $"{N(p.X * Width)},{N(p.Y * Height)}"));
-            body.Append($"<polygon points='{points}' fill='#E8792B' fill-opacity='.12' stroke='#E8792B' stroke-width='5'/>");
+            Highlight(body, zone);
             center = (zone.Polygon.Average(p => p.X) * Width, zone.Polygon.Max(p => p.Y) * Height);
         }
         var rng = new Random(seed);
@@ -34,6 +33,24 @@ public static class SceneRenderer
         }
         body.Append("</g>");
         return Wrap(body.ToString(), $"{camera.Name} · {ts:dd/MM/yyyy HH:mm} UTC · personnes floutées");
+    }
+
+    /// <summary>
+    /// Caméra réelle : le boîtier ne transmet pas l'image de l'instant, la vignette montre donc
+    /// l'image de référence avec la zone concernée.
+    /// </summary>
+    public static string ReferenceThumbnail(Camera camera, Zone? zone, byte[] jpeg)
+    {
+        var body = new StringBuilder(
+            $"<image width='{Width}' height='{Height}' preserveAspectRatio='none' href='data:image/jpeg;base64,{Convert.ToBase64String(jpeg)}'/>");
+        if (zone is { Polygon.Count: > 1 }) Highlight(body, zone);
+        return Wrap(body.ToString(), $"{camera.Name} · image de référence");
+    }
+
+    private static void Highlight(StringBuilder body, Zone zone)
+    {
+        var points = string.Join(' ', zone.Polygon.Select(p => $"{N(p.X * Width)},{N(p.Y * Height)}"));
+        body.Append($"<polygon points='{points}' fill='#E8792B' fill-opacity='.12' stroke='#E8792B' stroke-width='5'/>");
     }
 
     private static string Wrap(string body, string caption) =>

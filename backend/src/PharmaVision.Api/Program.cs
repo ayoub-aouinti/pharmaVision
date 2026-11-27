@@ -27,6 +27,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     o.Cookie.SameSite = SameSiteMode.Strict;
     o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     o.ExpireTimeSpan = TimeSpan.FromHours(12);
+    o.Events.OnValidatePrincipal = Access.ValidateSessionAsync;
     // API : des codes 401 / 403 plutôt que des redirections vers une page de connexion.
     o.Events.OnRedirectToLogin = c => { c.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
     o.Events.OnRedirectToAccessDenied = c => { c.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
@@ -46,8 +47,10 @@ builder.Services.AddSingleton<LiveNotifier>();
 builder.Services.AddScoped<KpiService>();
 builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<ReportBuilder>();
+builder.Services.AddScoped<HistoryService>();
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddHostedService<AlertEngine>();
+builder.Services.AddHostedService<RetentionService>();
 
 var app = builder.Build();
 

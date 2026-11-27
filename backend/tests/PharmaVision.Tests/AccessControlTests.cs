@@ -29,7 +29,8 @@ public class ApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IDbContextOptionsConfiguration<PharmaDbContext>>();
             services.AddDbContext<PharmaDbContext>(o => o.UseInMemoryDatabase(_database));
-            services.Remove(services.Single(s => s.ImplementationType == typeof(AlertEngine)));
+            foreach (var background in new[] { typeof(AlertEngine), typeof(RetentionService) })
+                services.Remove(services.Single(s => s.ImplementationType == background));
         });
     }
 
@@ -61,7 +62,7 @@ public class ApiFactory : WebApplicationFactory<Program>
                 [
                     new EdgeDevice
                     {
-                        Id = id, Name = "Boîtier", Version = "test", ApiKey = $"key-{id}",
+                        Id = id, Name = "Boîtier", Version = "test", ApiKeyHash = DeviceKeys.Hash($"key-{id}"),
                         Cameras =
                         [
                             new Camera

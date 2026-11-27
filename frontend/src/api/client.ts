@@ -1,6 +1,7 @@
 import type {
-  Alert, AlertAction, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DiscoveredCamera, HeatCell,
+  Alert, AlertAction, AlertContext, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DayReplay, Device, DeviceKey, DiscoveredCamera, HeatCell,
   HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ReportFormat, ReportKind, ShelfRow, Zone, ZoneDetail, ZoneRow,
+  NewUser, PharmacySettings, User, UserChanges,
 } from './types'
 
 export class ApiError extends Error {
@@ -55,6 +56,18 @@ export const api = {
   }),
   login: (email: string, password: string) => request<CurrentUser>('/auth/login', 'POST', { email, password }),
   logout: () => request<void>('/auth/logout', 'POST'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/auth/password', 'POST', { currentPassword, newPassword }),
+  users: () => request<User[]>('/users'),
+  createUser: (user: NewUser) => request<User>('/users', 'POST', user),
+  updateUser: (id: number, changes: UserChanges) => request<User>(`/users/${id}`, 'PUT', changes),
+  resetPassword: (id: number, password: string) => request<void>(`/users/${id}/password`, 'POST', { password }),
+  deleteUser: (id: number) => request<void>(`/users/${id}`, 'DELETE'),
+  updatePharmacy: (id: number, settings: PharmacySettings) => request<void>(`/pharmacies/${id}`, 'PUT', settings),
+  devices: (pharmacyId: number) => request<Device[]>(`/devices?pharmacyId=${pharmacyId}`),
+  addDevice: (pharmacyId: number, name: string) => request<DeviceKey>('/devices', 'POST', { pharmacyId, name }),
+  renewDeviceKey: (id: number) => request<DeviceKey>(`/devices/${id}/key`, 'POST'),
+  deleteDevice: (id: number) => request<void>(`/devices/${id}`, 'DELETE'),
   alertHistory: (id: number, period: Period, filters: AlertFilters, page: number, pageSize = 20) => {
     const query = new URLSearchParams({
       pharmacyId: String(id), period, state: filters.state, page: String(page), pageSize: String(pageSize),
@@ -78,6 +91,9 @@ export const api = {
     if (brand) query.set('brand', brand)
     return file(`/reports/${kind}?${query}`)
   },
+  historyDay: (id: number, date: string) =>
+    request<DayReplay>(`/history/day?pharmacyId=${id}${date && `&date=${date}`}`),
+  alertContext: (id: number) => request<AlertContext>(`/alerts/${id}/context`),
   alerts: (id: number) => request<Alert[]>(`/alerts?pharmacyId=${id}&limit=100`),
   alertAction: (id: number, action: AlertAction) => request<Alert>(`/alerts/${id}/action`, 'POST', { action }),
   cameras: (id: number) => request<Camera[]>(`/cameras?pharmacyId=${id}`),
@@ -91,5 +107,7 @@ export const api = {
   deleteZone: (id: number) => request<void>(`/zones/${id}`, 'DELETE'),
 }
 
-export const snapshotUrl = (cameraId: number) => `/api/cameras/${cameraId}/snapshot`
+/** La date de la photo de référence dans l'adresse force le rechargement d'une nouvelle image. */
+export const snapshotUrl = (cameraId: number, version?: string | null) =>
+  `/api/cameras/${cameraId}/snapshot${version ? `?v=${encodeURIComponent(version)}` : ''}`
 export const thumbnailUrl = (alertId: number) => `/api/alerts/${alertId}/thumbnail`

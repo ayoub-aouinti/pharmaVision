@@ -8,3 +8,11 @@ dist/
 *.log
 ~$*
 docs/
+
+# Boîtier Python
+.venv/
+__pycache__/
+.pytest_cache/
+edge/models/
+edge/data/
+edge/*.key

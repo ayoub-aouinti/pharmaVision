@@ -172,6 +172,20 @@ namespace PharmaVision.Infrastructure.Migrations
                     b.ToTable("Cameras");
                 });
 
+            modelBuilder.Entity("PharmaVision.Domain.CameraImage", b =>
+                {
+                    b.Property<int>("CameraId")
+                        .HasColumnType("integer");
+
+                    b.Property<byte[]>("Jpeg")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("CameraId");
+
+                    b.ToTable("CameraImages");
+                });
+
             modelBuilder.Entity("PharmaVision.Domain.EdgeDevice", b =>
                 {
                     b.Property<int>("Id")
@@ -180,7 +194,7 @@ namespace PharmaVision.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApiKey")
+                    b.Property<string>("ApiKeyHash")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -200,7 +214,7 @@ namespace PharmaVision.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApiKey")
+                    b.HasIndex("ApiKeyHash")
                         .IsUnique();
 
                     b.HasIndex("PharmacyId");
@@ -226,6 +240,16 @@ namespace PharmaVision.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("StatisticsMonths")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(24);
+
+                    b.Property<int>("ThumbnailDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(30);
 
                     b.Property<string>("TimeZone")
                         .IsRequired()
@@ -317,6 +341,17 @@ namespace PharmaVision.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("FailedLogins")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -326,6 +361,9 @@ namespace PharmaVision.Infrastructure.Migrations
                         .HasColumnType("integer[]");
 
                     b.Property<int>("Role")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SecurityVersion")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -496,6 +534,15 @@ namespace PharmaVision.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("PharmaVision.Domain.CameraImage", b =>
+                {
+                    b.HasOne("PharmaVision.Domain.Camera", null)
+                        .WithOne()
+                        .HasForeignKey("PharmaVision.Domain.CameraImage", "CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("PharmaVision.Domain.EdgeDevice", b =>

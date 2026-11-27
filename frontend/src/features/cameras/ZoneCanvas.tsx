@@ -45,8 +45,9 @@ export default function ZoneCanvas({ src, zones, selected, tool, readOnly, onSel
   onChange: (polygon: Point[]) => void
 }) {
   const [ref, width] = useWidth()
-  const height = (width * 9) / 16
   const image = useImage(src)
+  // Proportions de l'image reçue ; 16/9 en attendant son chargement.
+  const height = image ? (width * image.height) / image.width : (width * 9) / 16
   const [points, setPoints] = useState<Point[]>([])
   const [cursor, setCursor] = useState<Point | null>(null)
 

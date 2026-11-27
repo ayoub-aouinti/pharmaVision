@@ -23,7 +23,7 @@ public record ZoneDto(
 
 public record CameraDto(
     int Id, string Name, string Brand, string Protocol, string RtspUrl, string Resolution, CameraStatus Status,
-    DateTime? ReferencePhotoAt, int PeopleNow, List<ZoneDto> Zones);
+    DateTime? ReferencePhotoAt, int PeopleNow, List<ZoneDto> Zones, int DeviceId, bool HasImage);
 
 public record CameraInput(
     int PharmacyId,
@@ -31,7 +31,8 @@ public record CameraInput(
     [Required, StringLength(60)] string Brand,
     [Required, RegularExpression("^rtsp://.+", ErrorMessage = "L'URL doit commencer par rtsp://")] string RtspUrl,
     string? Resolution,
-    CameraStatus Status = CameraStatus.Online);
+    CameraStatus Status = CameraStatus.Online,
+    int? DeviceId = null);
 
 public record DiscoveredCamera(string Name, string Brand, string RtspUrl, string Resolution);
 
@@ -70,13 +71,17 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
             .Select(e => new { e.ZoneId, e.TrackId })
             .Distinct().ToListAsync(ct);
 
+        var cameraIds = cameras.Select(c => c.Id).ToList();
+        var pictured = await db.CameraImages.Where(i => cameraIds.Contains(i.CameraId))
+            .Select(i => i.CameraId).ToListAsync(ct);
+
         return cameras.Select(c =>
         {
             var own = c.Zones.Select(z => z.Id).ToHashSet();
             var people = recent.Where(r => own.Contains(r.ZoneId)).Select(r => r.TrackId).Distinct().Count();
             return new CameraDto(c.Id, c.Name, c.Brand, c.Protocol, owner ? c.RtspUrl : "", c.Resolution, c.Status, c.ReferencePhotoAt,
                 c.Status == CameraStatus.Online ? people : 0,
-                c.Zones.OrderBy(z => z.Id).Select(z => z.ToDto()).ToList());
+                c.Zones.OrderBy(z => z.Id).Select(z => z.ToDto()).ToList(), c.DeviceId, pictured.Contains(c.Id));
         }).ToList();
     }
 
@@ -85,8 +90,10 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
     public async Task<ActionResult<int>> Create(CameraInput input, CancellationToken ct)
     {
         if (!User.CanAccess(input.PharmacyId)) return Forbid();
-        var device = await db.Devices.FirstOrDefaultAsync(d => d.PharmacyId == input.PharmacyId, ct);
-        if (device is null) return NotFound("Aucun boîtier pour cette pharmacie");
+        var device = await db.Devices.Where(d => d.PharmacyId == input.PharmacyId
+                && (input.DeviceId == null || d.Id == input.DeviceId))
+            .OrderBy(d => d.Id).FirstOrDefaultAsync(ct);
+        if (device is null) return NotFound("Boîtier introuvable pour cette pharmacie");
         var camera = new Camera
         {
             DeviceId = device.Id, Name = input.Name, Brand = input.Brand, RtspUrl = input.RtspUrl,
@@ -101,8 +108,17 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CameraInput input, CancellationToken ct)
     {
-        var camera = await Scoped().FirstOrDefaultAsync(c => c.Id == id, ct);
+        var camera = await Scoped().Include(c => c.Device).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (camera is null) return NotFound();
+        if (input.DeviceId is { } deviceId && deviceId != camera.DeviceId)
+        {
+            // Une caméra ne change pas d'officine : seulement de boîtier au sein de la sienne.
+            var pharmacyId = camera.Device!.PharmacyId;
+            if (!await db.Devices.AnyAsync(d => d.Id == deviceId && d.PharmacyId == pharmacyId, ct))
+                return NotFound("Boîtier introuvable pour cette pharmacie");
+            camera.DeviceId = deviceId;
+            camera.Device = null;
+        }
         (camera.Name, camera.Brand, camera.RtspUrl, camera.Status) = (input.Name, input.Brand, input.RtspUrl, input.Status);
         camera.Resolution = input.Resolution ?? camera.Resolution;
         await db.SaveChangesAsync(ct);
@@ -133,7 +149,11 @@ public class CamerasController(PharmaDbContext db, TimeProvider clock) : Control
     public async Task<IActionResult> Snapshot(int id, CancellationToken ct)
     {
         var camera = await Scoped().AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
-        return camera is null ? NotFound() : Content(SceneRenderer.Snapshot(camera), "image/svg+xml; charset=utf-8");
+        if (camera is null) return NotFound();
+        // Image réelle si un boîtier en a envoyé une, décor dessiné sinon.
+        return await db.CameraImages.AsNoTracking().FirstOrDefaultAsync(i => i.CameraId == id, ct) is { } image
+            ? File(image.Jpeg, "image/jpeg")
+            : Content(SceneRenderer.Snapshot(camera), "image/svg+xml; charset=utf-8");
     }
 
     [Authorize(Roles = Roles.Titulaire)]

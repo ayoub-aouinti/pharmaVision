@@ -10,7 +10,8 @@ namespace PharmaVision.Api.Controllers;
 public record DeviceStatus(string Name, string Version, DateTime? LastSeen, bool Online);
 
 public record PharmacySummary(
-    int Id, string Name, string City, string? Group, string TimeZone, DeviceStatus? Device, int ActiveAlerts);
+    int Id, string Name, string City, string? Group, string TimeZone, DeviceStatus? Device, int ActiveAlerts,
+    int ThumbnailDays, int StatisticsMonths);
 
 [ApiController]
 [Route("api/pharmacies")]
@@ -33,7 +34,7 @@ public class PharmaciesController(PharmaDbContext db, TimeProvider clock) : Cont
             var device = p.Devices.OrderByDescending(d => d.LastSeen).FirstOrDefault();
             return new PharmacySummary(p.Id, p.Name, p.City, p.Group, p.TimeZone,
                 device is null ? null : new DeviceStatus(device.Name, device.Version, device.LastSeen, device.LastSeen > limit),
-                alerts.GetValueOrDefault(p.Id));
+                alerts.GetValueOrDefault(p.Id), p.ThumbnailDays, p.StatisticsMonths);
         }).ToList();
     }
 }

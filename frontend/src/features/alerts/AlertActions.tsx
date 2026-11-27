@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { thumbnailUrl } from '../../api/client'
 import type { Alert } from '../../api/types'
 import { Button } from '../../components/ui'
@@ -26,10 +27,14 @@ export function AlertButtons({ alert, act, onDone }: {
 }
 
 export function Thumbnail({ alertId }: { alertId: number }) {
+  const [missing, setMissing] = useState<number | null>(null)
+  if (missing === alertId) {
+    return <p className="rounded-btn bg-bg p-4 text-sm text-muted">Image indisponible : sa durée de conservation est peut-être dépassée.</p>
+  }
   return (
     <>
-      <img src={thumbnailUrl(alertId)} alt="Vignette de l'alerte, personnes floutées" className="w-full rounded-btn" />
-      <p className="mt-2 text-sm text-muted">Image fictive. Les personnes sont floutées ; aucune vidéo ne quitte la pharmacie.</p>
+      <img src={thumbnailUrl(alertId)} onError={() => setMissing(alertId)} alt="Vignette de l'alerte, personnes floutées" className="w-full rounded-btn" />
+      <p className="mt-2 text-sm text-muted">Les personnes sont floutées ou retirées ; aucune vidéo ne quitte la pharmacie.</p>
     </>
   )
 }

@@ -20,6 +20,11 @@ public class User
     public UserRole Role { get; set; }
     /// <summary>Officines auxquelles le compte donne accès.</summary>
     public List<int> PharmacyIds { get; set; } = [];
+    public bool IsActive { get; set; } = true;
+    /// <summary>Augmentée à chaque changement de droits ou de mot de passe : les sessions antérieures tombent.</summary>
+    public int SecurityVersion { get; set; }
+    public int FailedLogins { get; set; }
+    public DateTime? LockedUntil { get; set; }
 }
 
 public class Pharmacy
@@ -29,6 +34,10 @@ public class Pharmacy
     public required string City { get; set; }
     public string? Group { get; set; }
     public string TimeZone { get; set; } = "Africa/Tunis";
+    /// <summary>Durée pendant laquelle les images d'alerte restent consultables.</summary>
+    public int ThumbnailDays { get; set; } = 30;
+    /// <summary>Durée de conservation des mesures, ventes et alertes.</summary>
+    public int StatisticsMonths { get; set; } = 24;
     public List<EdgeDevice> Devices { get; set; } = [];
 }
 
@@ -39,7 +48,7 @@ public class EdgeDevice
     public Pharmacy? Pharmacy { get; set; }
     public required string Name { get; set; }
     public required string Version { get; set; }
-    public required string ApiKey { get; set; }
+    public required string ApiKeyHash { get; set; }
     public DateTime? LastSeen { get; set; }
     public List<Camera> Cameras { get; set; } = [];
 }
@@ -59,6 +68,13 @@ public class Camera
     public string Scene { get; set; } = "generic";
     public DateTime? ReferencePhotoAt { get; set; }
     public List<Zone> Zones { get; set; } = [];
+}
+
+/// <summary>Image de référence envoyée par un boîtier, personnes retirées ou floutées.</summary>
+public class CameraImage
+{
+    public int CameraId { get; set; }
+    public required byte[] Jpeg { get; set; }
 }
 
 /// <summary>Point normalisé (0..1) dans l'image de la caméra.</summary>

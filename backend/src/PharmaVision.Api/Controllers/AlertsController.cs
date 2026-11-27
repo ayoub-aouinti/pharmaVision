@@ -99,11 +99,18 @@ public class AlertsController(PharmaDbContext db, LiveNotifier notifier, TimePro
     {
         var alert = await db.Alerts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, ct);
         if (alert is null || !User.CanAccess(alert.PharmacyId) || alert.CameraId is not { } cameraId) return NotFound();
+        var days = await db.Pharmacies.Where(p => p.Id == alert.PharmacyId).Select(p => p.ThumbnailDays).FirstAsync(ct);
+        if (alert.StartedAt < clock.GetUtcNow().UtcDateTime.AddDays(-days))
+            return StatusCode(StatusCodes.Status410Gone, "Image effacée : durée de conservation dépassée");
         var camera = await db.Cameras.AsNoTracking().FirstOrDefaultAsync(c => c.Id == cameraId, ct);
         if (camera is null) return NotFound();
         var zone = alert.ZoneId is { } zoneId
             ? await db.Zones.AsNoTracking().FirstOrDefaultAsync(z => z.Id == zoneId, ct)
             : null;
-        return Content(SceneRenderer.Thumbnail(camera, zone, alert.Id, alert.StartedAt), "image/svg+xml; charset=utf-8");
+        var image = await db.CameraImages.AsNoTracking().FirstOrDefaultAsync(i => i.CameraId == cameraId, ct);
+        var svg = image is null
+            ? SceneRenderer.Thumbnail(camera, zone, alert.Id, alert.StartedAt)
+            : SceneRenderer.ReferenceThumbnail(camera, zone, image.Jpeg);
+        return Content(svg, "image/svg+xml; charset=utf-8");
     }
 }

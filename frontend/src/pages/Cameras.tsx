@@ -155,10 +155,10 @@ export default function Cameras({ pharmacyId, canEdit }: { pharmacyId: number; c
             </div>
             <p className="mb-2 text-xs text-muted">{TOOLS.find((t) => t.tool === tool)?.help}</p>
             </>)}
-            <ZoneCanvas key={camera.id} src={snapshotUrl(camera.id)} zones={camera.zones} selected={draft} tool={tool} readOnly={!canEdit}
+            <ZoneCanvas key={camera.id} src={snapshotUrl(camera.id, camera.referencePhotoAt)} zones={camera.zones} selected={draft} tool={tool} readOnly={!canEdit}
               onSelect={selectZone} onCreate={create} onChange={(polygon) => draft && edit({ ...draft, polygon })} />
             <p className="mt-2 text-xs text-muted">
-              Image fictive · {camera.resolution}{camera.rtspUrl && ` · ${camera.rtspUrl}`}
+              {camera.hasImage ? 'Image envoyée par le boîtier, personnes retirées ou floutées' : 'Image fictive'} · {camera.resolution}{camera.rtspUrl && ` · ${camera.rtspUrl}`}
               {camera.referencePhotoAt && ` · photo de référence du ${new Date(camera.referencePhotoAt).toLocaleString('fr-FR')}`}
             </p>
             {(photo.error ?? removeCamera.error) && (

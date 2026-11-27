@@ -17,7 +17,10 @@ export function CameraDialog({ pharmacyId, camera, onClose, onSaved }: {
     brand: camera?.brand ?? 'Hikvision',
     rtspUrl: camera?.rtspUrl ?? 'rtsp://',
     status: camera?.status ?? 'Online',
+    deviceId: camera?.deviceId,
   })
+  // Réservé au titulaire, comme cette fenêtre.
+  const devices = useQuery({ queryKey: ['devices', pharmacyId], queryFn: () => api.devices(pharmacyId) })
   const save = useMutation({
     mutationFn: async () => {
       if (!camera) return api.createCamera(input)
@@ -26,6 +29,7 @@ export function CameraDialog({ pharmacyId, camera, onClose, onSaved }: {
     },
     onSuccess: async (id) => {
       await client.invalidateQueries({ queryKey: ['cameras', pharmacyId] })
+      void client.invalidateQueries({ queryKey: ['devices', pharmacyId] })
       onSaved(id)
       onClose()
     },
@@ -51,6 +55,14 @@ export function CameraDialog({ pharmacyId, camera, onClose, onSaved }: {
           <input className="field mt-1" required pattern="rtsp://.+" value={input.rtspUrl}
             onChange={(e) => set({ rtspUrl: e.target.value })} />
         </label>
+        {devices.data && devices.data.length > 1 && (
+          <label className="block">Boîtier
+            <select className="field mt-1" value={input.deviceId ?? devices.data[0].id}
+              onChange={(e) => set({ deviceId: Number(e.target.value) })}>
+              {devices.data.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </label>
+        )}
         <label className="block">Statut (simulé)
           <select className="field mt-1" value={input.status}
             onChange={(e) => set({ status: e.target.value as CameraStatus })}>

@@ -5,6 +5,7 @@ import { api } from '../api/client'
 import type { Alert, AlertFilters, AlertStats, Period, Pharmacy } from '../api/types'
 import { Button, Card, Modal, QueryState } from '../components/ui'
 import { AlertButtons, Thumbnail } from '../features/alerts/AlertActions'
+import AlertCurve from '../features/alerts/AlertCurve'
 import { ACTION_DONE, ALERT_KINDS, STATUS_LABELS, useAlertAction } from '../features/alerts/shared'
 import { downloadAlerts } from '../lib/exportCsv'
 import { formatCount, formatDuration } from '../lib/format'
@@ -149,6 +150,7 @@ export default function Alerts({ pharmacy, period }: { pharmacy: Pharmacy; perio
           {shown.cameraId && shown.kind !== 'CameraOffline' && <Thumbnail alertId={shown.id} />}
           <p className="mt-3 text-sm">{shown.detail}</p>
           <Timeline alert={shown} timeZone={pharmacy.timeZone} />
+          <AlertCurve alert={shown} timeZone={pharmacy.timeZone} />
           {act.error && <p role="alert" className="mt-2 text-sm text-danger">{act.error.message}</p>}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <AlertButtons alert={shown} act={act} onDone={setSelected} />

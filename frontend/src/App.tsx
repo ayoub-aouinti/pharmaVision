@@ -12,11 +12,13 @@ import { endSession } from './lib/session'
 import { useLive } from './lib/useLive'
 import Alerts from './pages/Alerts'
 import Cameras from './pages/Cameras'
-import ComingSoon from './pages/ComingSoon'
+import NotFound from './pages/NotFound'
 import Dashboard from './pages/Dashboard'
+import HistoryPage from './pages/History'
 import Login from './pages/Login'
 import Products from './pages/Products'
 import Reports from './pages/Reports'
+import SettingsPage from './pages/Settings'
 import Zones from './pages/Zones'
 
 const NAV = [
@@ -40,8 +42,6 @@ const PERIODS: { value: Period; label: string }[] = [
 function stored(key: string) {
   try { return localStorage.getItem(key) } catch { return null }
 }
-
-const IMPLEMENTED = ['/', '/cameras', '/zones', '/produits', '/alertes', '/rapports']
 
 export default function App() {
   const me = useQuery({ queryKey: ['me'], queryFn: api.me, staleTime: Infinity, refetchInterval: false })
@@ -112,9 +112,12 @@ function Shell({ user }: { user: CurrentUser }) {
               <Route path="/zones" element={<Zones key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               <Route path="/produits" element={<Products key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               <Route path="/rapports" element={<Reports key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
+              <Route path="/historique" element={<HistoryPage key={pharmacy.id} pharmacy={pharmacy} />} />
+              <Route path="/parametres" element={
+                <SettingsPage user={user} pharmacy={pharmacy} pharmacies={pharmacies.data ?? []} />
+              } />
               <Route path="/alertes" element={<Alerts key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
-              {NAV.filter((n) => !IMPLEMENTED.includes(n.to)).map((n) => <Route key={n.to} path={n.to} element={<ComingSoon title={n.label} />} />)}
-              <Route path="*" element={<ComingSoon title="Page introuvable" />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           )}
         </main>

@@ -28,12 +28,17 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<Sale> Sales => Set<Sale>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<CameraImage> CameraImages => Set<CameraImage>();
     public DbSet<HourlyAggregate> Hourly => Set<HourlyAggregate>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.Entity<User>().HasIndex(u => u.Email).IsUnique();
-        b.Entity<EdgeDevice>().HasIndex(d => d.ApiKey).IsUnique();
+        b.Entity<EdgeDevice>().HasIndex(d => d.ApiKeyHash).IsUnique();
+        // Valeurs appliquées aux lignes créées avant l'ajout de ces colonnes.
+        b.Entity<User>().Property(u => u.IsActive).HasDefaultValue(true).HasSentinel(true);
+        b.Entity<Pharmacy>().Property(p => p.ThumbnailDays).HasDefaultValue(30).HasSentinel(30);
+        b.Entity<Pharmacy>().Property(p => p.StatisticsMonths).HasDefaultValue(24).HasSentinel(24);
 
         b.Entity<Zone>().Property(z => z.Polygon).HasColumnType("jsonb").HasConversion(
             v => JsonSerializer.Serialize(v, JsonSerializerOptions.Web),
@@ -68,6 +73,10 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
             e.Property(x => x.Total).HasColumnName("total");
         });
 
+        b.Entity<CameraImage>().HasKey(i => i.CameraId);
+        b.Entity<CameraImage>().Property(i => i.CameraId).ValueGeneratedNever();
+        b.Entity<CameraImage>().HasOne<Camera>().WithOne().HasForeignKey<CameraImage>(i => i.CameraId)
+            .OnDelete(DeleteBehavior.Cascade);
         b.Entity<Product>().HasKey(p => p.Code);
         b.Entity<Product>().Property(p => p.Price).HasPrecision(12, 3);
 

@@ -14,6 +14,8 @@ export interface Pharmacy {
   timeZone: string
   device: { name: string; version: string; lastSeen: string | null; online: boolean } | null
   activeAlerts: number
+  thumbnailDays: number
+  statisticsMonths: number
 }
 
 export interface Kpi {
@@ -158,6 +160,45 @@ export interface ProductReport {
 export type ReportKind = 'synthese' | 'zones' | 'produits' | 'laboratoire'
 export type ReportFormat = 'pdf' | 'xlsx'
 
+export interface ReplayZone {
+  id: number
+  name: string
+  type: ZoneType
+  x: number | null
+  y: number | null
+  w: number | null
+  h: number | null
+  threshold: number | null
+}
+
+export interface ReplayFrame {
+  start: string
+  entries: number
+  exits: number
+  occupancy: number
+  tickets: number
+  waitSeconds: number | null
+  zones: { zoneId: number; level: number | null; presence: number }[]
+}
+
+export interface DayReplay {
+  date: string
+  firstDay: string
+  today: string
+  stepMinutes: number
+  zones: ReplayZone[]
+  frames: ReplayFrame[]
+  alerts: Alert[]
+}
+
+export interface AlertContext {
+  metric: string
+  unit: 'percent' | 'seconds'
+  threshold: number | null
+  bucketMinutes: number
+  points: { start: string; value: number | null }[]
+}
+
 export interface Alert {
   id: number
   zoneId: number | null
@@ -199,10 +240,40 @@ export interface AlertFilters {
   severity: Alert['severity'] | ''
 }
 
+export type Role = 'Titulaire' | 'Equipe'
+
 export interface CurrentUser {
+  id: number
   name: string
   email: string
-  role: 'Titulaire' | 'Equipe'
+  role: Role
+}
+
+export interface User {
+  id: number
+  email: string
+  displayName: string
+  role: Role
+  pharmacyIds: number[]
+  isActive: boolean
+  locked: boolean
+}
+
+export type UserChanges = Pick<User, 'displayName' | 'role' | 'pharmacyIds' | 'isActive'>
+export type NewUser = Pick<User, 'email' | 'displayName' | 'role' | 'pharmacyIds'> & { password: string }
+export type PharmacySettings = Pick<Pharmacy, 'name' | 'city' | 'thumbnailDays' | 'statisticsMonths'>
+
+export interface Device {
+  id: number
+  name: string
+  version: string
+  lastSeen: string | null
+  cameras: number
+}
+
+export interface DeviceKey {
+  deviceId: number
+  key: string
 }
 
 export interface Point {
@@ -243,6 +314,9 @@ export interface Camera {
   referencePhotoAt: string | null
   peopleNow: number
   zones: Zone[]
+  deviceId: number
+  /** Vrai quand un boîtier a envoyé une image réelle. */
+  hasImage: boolean
 }
 
 export interface CameraInput {
@@ -252,6 +326,7 @@ export interface CameraInput {
   rtspUrl: string
   resolution?: string
   status: CameraStatus
+  deviceId?: number
 }
 
 export interface DiscoveredCamera {
