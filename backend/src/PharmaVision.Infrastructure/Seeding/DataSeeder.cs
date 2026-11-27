@@ -62,7 +62,10 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
 
         await db.SaveChangesAsync(ct);
         if (written == 0) return;
-        await db.Database.ExecuteSqlRawAsync("CALL refresh_continuous_aggregate('events_hourly', NULL, NULL);", ct);
+        // L'heure en cours n'est pas matérialisée : elle reste calculée à la volée avec les nouveaux événements.
+        var currentHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
+        await db.Database.ExecuteSqlRawAsync(
+            "CALL refresh_continuous_aggregate('events_hourly', NULL, {0}::timestamptz);", [currentHour], ct);
         logger.LogInformation("Données fictives générées : {Count} événements", written);
     }
 
