@@ -1,4 +1,4 @@
-import type { Alert, HourPoint, KpiSummary, Period, Pharmacy, ShelfRow } from '../api/types'
+import type { Alert, HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ShelfRow } from '../api/types'
 import { ACTION_DONE, ALERT_KINDS, STATUS_LABELS } from '../features/alerts/shared'
 
 // Séparateur « ; » et virgule décimale : ouverture directe dans Excel en français.
@@ -42,6 +42,28 @@ export function downloadAlerts(pharmacy: Pharmacy, period: Period, alerts: Alert
       a.actionTaken && ACTION_DONE[a.actionTaken], date(a.acknowledgedAt), a.handledBy, date(a.endedAt),
       a.status === 'Resolved' ? a.resolvedBy ?? 'Automatique' : null,
     ]),
+  ])
+}
+
+export function downloadProducts(pharmacy: Pharmacy, period: Period, report: ProductReport) {
+  save(`pharmavision-marques-${pharmacy.city.toLowerCase()}-${period}-${report.to.slice(0, 10)}.csv`, [
+    ['PharmaVision (données fictives)', pharmacy.name, pharmacy.city],
+    ['Période', period, report.from, report.to],
+    [],
+    ['Famille', 'Unités', 'Chiffre d’affaires (TND)', 'Tendance', 'Tickets', 'Arrêts', 'Prises en main', 'Transformation'],
+    ...report.families.map((f) => [
+      f.family, f.units, f.revenue, f.revenueTrend, f.tickets,
+      f.hasShelf ? f.stops : null, f.hasShelf ? f.pickups : null, f.transformation,
+    ]),
+    [],
+    ['Marque', 'Familles', 'Unités', 'Chiffre d’affaires (TND)', 'Tendance', 'Part', 'Linéaires', 'Arrêts des linéaires (partagés)'],
+    ...report.brands.map((b) => [
+      b.brand, b.families.join(', '), b.units, b.revenue, b.revenueTrend, b.revenueShare, b.shelves.join(', '),
+      b.shelves.length ? b.shelfStops : null,
+    ]),
+    [],
+    ['Code', 'Produit', 'Marque', 'Famille', 'Unités', 'Chiffre d’affaires (TND)'],
+    ...report.topProducts.map((p) => [p.code, p.name, p.brand, p.family, p.units, p.revenue]),
   ])
 }
 

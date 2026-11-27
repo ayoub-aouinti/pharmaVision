@@ -27,6 +27,7 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
     public DbSet<ZoneEvent> Events => Set<ZoneEvent>();
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<Product> Products => Set<Product>();
     public DbSet<HourlyAggregate> Hourly => Set<HourlyAggregate>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -66,6 +67,9 @@ public class PharmaDbContext(DbContextOptions<PharmaDbContext> options) : DbCont
             e.Property(x => x.Count).HasColumnName("count");
             e.Property(x => x.Total).HasColumnName("total");
         });
+
+        b.Entity<Product>().HasKey(p => p.Code);
+        b.Entity<Product>().Property(p => p.Price).HasPrecision(12, 3);
 
         b.Entity<Sale>().HasIndex(s => new { s.PharmacyId, s.Ts });
         b.Entity<Sale>().Property(s => s.Amount).HasPrecision(12, 3);

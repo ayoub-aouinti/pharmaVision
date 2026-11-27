@@ -236,6 +236,31 @@ namespace PharmaVision.Infrastructure.Migrations
                     b.ToTable("Pharmacies");
                 });
 
+            modelBuilder.Entity("PharmaVision.Domain.Product", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Brand")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Family")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("Products");
+                });
+
             modelBuilder.Entity("PharmaVision.Domain.Sale", b =>
                 {
                     b.Property<long>("Id")

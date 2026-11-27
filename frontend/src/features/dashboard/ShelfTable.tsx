@@ -1,15 +1,8 @@
 import type { UseQueryResult } from '@tanstack/react-query'
-import { AlertTriangle, CircleCheck, CircleHelp, CircleX } from 'lucide-react'
 import type { ShelfRow } from '../../api/types'
 import { Card, QueryState } from '../../components/ui'
 import { formatCount, formatDuration, formatPercent } from '../../lib/format'
-
-const STATES = {
-  Conforme: { label: 'Conforme', icon: CircleCheck, badge: 'bg-brand/12 text-brand-dark', bar: 'bg-brand' },
-  StockBas: { label: 'Stock bas', icon: AlertTriangle, badge: 'bg-warn/15 text-[#8a4310]', bar: 'bg-warn' },
-  Rupture: { label: 'Rupture', icon: CircleX, badge: 'bg-danger text-white', bar: 'bg-danger' },
-  Inconnu: { label: 'Sans mesure', icon: CircleHelp, badge: 'bg-bg text-muted', bar: 'bg-line' },
-}
+import { FillBar, ShelfBadge } from '../shelves/ShelfState'
 
 const HEADERS = [
   ['Linéaire', ''],
@@ -37,7 +30,6 @@ export default function ShelfTable({ query, className }: { query: UseQueryResult
             </thead>
             <tbody className="tabular-nums">
               {query.data.map((row) => {
-                const state = STATES[row.state]
                 return (
                   <tr key={row.zoneId} className="border-b border-line last:border-0">
                     <td className="py-2.5 pr-2">
@@ -45,12 +37,7 @@ export default function ShelfTable({ query, className }: { query: UseQueryResult
                       <p className="max-w-36 truncate text-xs text-muted" title={row.brands ?? ''}>{row.brands}</p>
                     </td>
                     <td className="pr-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-12 overflow-hidden rounded-full bg-bg">
-                          <div className={`h-full rounded-full ${state.bar}`} style={{ width: `${row.fill ?? 0}%` }} />
-                        </div>
-                        <span className="w-11 text-right">{row.fill === null ? '—' : `${Math.round(row.fill)} %`}</span>
-                      </div>
+                      <FillBar fill={row.fill} state={row.state} />
                     </td>
                     <td className="pr-2">{formatCount(row.stops)}</td>
                     <td className="pr-2">{formatPercent(row.engagementRate)}</td>
@@ -60,9 +47,7 @@ export default function ShelfTable({ query, className }: { query: UseQueryResult
                       {row.ruptureMinutes ? formatDuration(row.ruptureMinutes * 60) : '—'}
                     </td>
                     <td>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${state.badge}`}>
-                        <state.icon size={13} /> {state.label}
-                      </span>
+                      <ShelfBadge state={row.state} />
                     </td>
                   </tr>
                 )

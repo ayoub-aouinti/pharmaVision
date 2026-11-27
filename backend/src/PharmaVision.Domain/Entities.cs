@@ -129,6 +129,17 @@ public class Alert
     public string? ResolvedBy { get; set; }
 }
 
+/// <summary>Référence du catalogue : rattache une ligne de caisse à une marque.</summary>
+public class Product
+{
+    public required string Code { get; set; }
+    public required string Name { get; set; }
+    /// <summary>Null pour les lignes sans marque (ordonnances).</summary>
+    public string? Brand { get; set; }
+    public required string Family { get; set; }
+    public decimal Price { get; set; }
+}
+
 public class Sale
 {
     public long Id { get; set; }

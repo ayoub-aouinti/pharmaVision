@@ -1,6 +1,6 @@
 import type {
   Alert, AlertAction, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DiscoveredCamera, HeatCell,
-  HourPoint, KpiSummary, Period, Pharmacy, ShelfRow, Zone,
+  HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ShelfRow, Zone, ZoneDetail, ZoneRow,
 } from './types'
 
 export class ApiError extends Error {
@@ -55,6 +55,10 @@ export const api = {
   shelves: (id: number, p: Period) => request<ShelfRow[]>(scoped('shelves', id, p)),
   heatmap: (id: number, p: Period) => request<HeatCell[]>(scoped('heatmap', id, p)),
   hourly: (id: number, p: Period) => request<HourPoint[]>(scoped('hourly', id, p)),
+  zoneRows: (id: number, p: Period) => request<ZoneRow[]>(`/analytics/zones?pharmacyId=${id}&period=${p}`),
+  zoneDetail: (id: number, zoneId: number, p: Period) =>
+    request<ZoneDetail>(`/analytics/zones/${zoneId}?pharmacyId=${id}&period=${p}`),
+  productReport: (id: number, p: Period) => request<ProductReport>(`/analytics/products?pharmacyId=${id}&period=${p}`),
   alerts: (id: number) => request<Alert[]>(`/alerts?pharmacyId=${id}&limit=100`),
   alertAction: (id: number, action: AlertAction) => request<Alert>(`/alerts/${id}/action`, 'POST', { action }),
   cameras: (id: number) => request<Camera[]>(`/cameras?pharmacyId=${id}`),

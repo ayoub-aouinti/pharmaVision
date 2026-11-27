@@ -43,6 +43,7 @@ builder.Services.AddRateLimiter(o =>
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<LiveNotifier>();
 builder.Services.AddScoped<KpiService>();
+builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddHostedService<AlertEngine>();
 

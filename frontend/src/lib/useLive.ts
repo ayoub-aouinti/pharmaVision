@@ -27,7 +27,7 @@ export function useLive(pharmacyId: number | undefined, period: Period) {
     const refreshMeasures = () => {
       timer ??= window.setTimeout(() => {
         timer = undefined
-        for (const key of ['kpis', 'shelves', 'heatmap', 'hourly', 'cameras', 'pharmacies'])
+        for (const key of ['kpis', 'shelves', 'heatmap', 'hourly', 'cameras', 'pharmacies', 'analytics'])
           void client.invalidateQueries({ queryKey: [key] })
       }, throttle)
     }

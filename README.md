@@ -12,7 +12,7 @@ Documents de conception : [docs/](docs/).
 | `backend/src/PharmaVision.Infrastructure` | EF Core, migrations, hypertable TimescaleDB, données fictives initiales |
 | `backend/src/PharmaVision.Api` | API REST, ingestion, SignalR, moteur d'alertes |
 | `backend/src/PharmaVision.Simulator` | Boîtier local simulé (même API que le futur boîtier réel) |
-| `frontend` | React + TypeScript : connexion, tableau de bord, Caméras & zones, Alertes |
+| `frontend` | React + TypeScript : connexion, tableau de bord, Caméras, Zones & linéaires, Produits & marques, Alertes |
 
 ## Lancer en développement
 
@@ -50,12 +50,17 @@ Le rôle Équipe consulte le tableau de bord et traite les alertes ; caméras et
 - Au premier démarrage, le rayon Dermo de la pharmacie de Tunis est en rupture et sa caméra « Réserve » hors ligne, pour montrer les alertes. « Réassortir » remplit le rayon simulé, ce qui clôt l'alerte.
 - Les images de caméra et les vignettes sont des dessins générés par l'API.
 - La découverte ONVIF renvoie des caméras inventées.
+- Un catalogue de produits fictif ([ProductCatalog.cs](backend/src/PharmaVision.Domain/ProductCatalog.cs)) rattache les ventes à des marques. Sur une base créée avant son ajout, les anciennes ventes restent comptées par famille mais sans marque.
 
 Repartir de zéro (**efface la base**) :
 
 ```bash
 docker compose down -v
 ```
+
+## Analyse par zone et par marque
+
+L'écran Zones & linéaires donne, pour chaque zone, ses mesures sur la période (par tranche de 5 minutes, par heure ou par jour) et ses alertes. L'écran Produits & marques croise la caisse et les linéaires. La caméra ne reconnaît pas les produits : arrêts et prises en main sont mesurés par linéaire, et les marques d'un même rayon les partagent.
 
 ## Brancher un vrai boîtier
 
@@ -82,7 +87,8 @@ cd frontend && npm run build
 - Gestion des comptes (création, changement de mot de passe, verrouillage) : seuls les comptes de démonstration existent. Un changement de droits ne prend effet qu'à la reconnexion.
 - En conteneurs, les sessions sont perdues quand l'API est recréée (clés de chiffrement non conservées). Derrière le proxy web, la limite de tentatives est partagée par tous les postes.
 - Clés de boîtier et mot de passe de base codés pour le développement.
-- Écrans Zones & linéaires, Produits & marques, Historique & replay, Rapports, Paramètres.
+- Écrans Historique & replay, Rapports, Paramètres.
+- Gestion du catalogue de produits (il sera alimenté par le logiciel de gestion d’officine).
 - Envoi réel des notifications (le canal est enregistré, rien n'est envoyé).
 - Règle « hors planogramme », rapports PDF/Excel, import CSV de la caisse.
 - Durées de conservation des données.

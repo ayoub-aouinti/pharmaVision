@@ -3,6 +3,11 @@ import type { Kpi, ZoneType } from '../api/types'
 const integer = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
 const percent = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 0 })
 
+const money = new Intl.NumberFormat('fr-FR', {
+  style: 'currency', currency: 'TND', minimumFractionDigits: 0, maximumFractionDigits: 0,
+})
+
+export const formatMoney = (v: number) => money.format(v)
 export const formatCount = (v: number) => integer.format(v)
 export const formatPercent = (v: number) => percent.format(v)
 

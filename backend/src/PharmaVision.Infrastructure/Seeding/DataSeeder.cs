@@ -25,6 +25,8 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
             await db.SaveChangesAsync(ct);
         }
 
+        await SeedProductsAsync(ct);
+
         var now = DateTime.UtcNow;
         var pharmacies = await db.Pharmacies.OrderBy(p => p.Id)
             .Include(p => p.Devices).ThenInclude(d => d.Cameras).ThenInclude(c => c.Zones).ThenInclude(z => z.Rules)
@@ -98,6 +100,19 @@ public class DataSeeder(PharmaDbContext db, ILogger<DataSeeder> logger)
             }
         }
         return (events, sales);
+    }
+
+    /// <summary>Ajoute les références du catalogue fictif absentes de la base.</summary>
+    private async Task SeedProductsAsync(CancellationToken ct)
+    {
+        var known = await db.Products.Select(p => p.Code).ToListAsync(ct);
+        var missing = ProductCatalog.All.Where(p => !known.Contains(p.Code)).Select(p => new Product
+        {
+            Code = p.Code, Name = p.Name, Brand = p.Brand, Family = p.Family, Price = p.Price,
+        }).ToList();
+        if (missing.Count == 0) return;
+        db.Products.AddRange(missing);
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Comptes de démonstration, créés si la base n'en contient aucun.</summary>

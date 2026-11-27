@@ -3,6 +3,7 @@ import {
   Camera as CameraIcon, Minus, MousePointer2, Pencil, Pentagon, Plus, Radar, ShieldOff, Square, Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, snapshotUrl } from '../api/client'
 import type { Camera, CameraStatus, Point, Zone, ZoneType } from '../api/types'
 import { Button, Card, QueryState } from '../components/ui'
@@ -28,7 +29,9 @@ const TOOLS: { tool: Tool; label: string; icon: typeof Square; help: string }[] 
 export default function Cameras({ pharmacyId, canEdit }: { pharmacyId: number; canEdit: boolean }) {
   const client = useQueryClient()
   const cameras = useQuery({ queryKey: ['cameras', pharmacyId], queryFn: () => api.cameras(pharmacyId) })
-  const [cameraId, setCameraId] = useState<number | null>(null)
+  // L'écran Zones ouvre directement la caméra d'une zone (?camera=…).
+  const [search] = useSearchParams()
+  const [cameraId, setCameraId] = useState<number | null>(() => Number(search.get('camera')) || null)
   const [tool, setTool] = useState<Tool>('select')
   const [draft, setDraft] = useState<Zone | null>(null)
   const [dirty, setDirty] = useState(false)

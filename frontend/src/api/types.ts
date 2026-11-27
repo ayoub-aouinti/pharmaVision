@@ -65,6 +65,96 @@ export interface HourPoint {
   tickets: number
 }
 
+export type ShelfState = ShelfRow['state']
+
+export interface ZoneRow {
+  zoneId: number
+  name: string
+  type: ZoneType
+  cameraId: number
+  cameraName: string
+  cameraStatus: CameraStatus
+  category: string | null
+  brands: string | null
+  planogramRef: string | null
+  facingsExpected: number | null
+  rules: AlertKind[]
+  visits: number
+  stops: number
+  pickups: number
+  fill: number | null
+  state: ShelfState | null
+  avgWaitSeconds: number | null
+  activeAlerts: number
+}
+
+export interface ZonePointStats {
+  start: string
+  visits: number
+  stops: number
+  pickups: number
+  level: number | null
+  minLevel: number | null
+  waitSeconds: number | null
+}
+
+export interface ZoneDetail {
+  zoneId: number
+  name: string
+  type: ZoneType
+  bucketMinutes: number
+  fillThreshold: number | null
+  ruptureMinutes: number
+  avgStopSeconds: number
+  points: ZonePointStats[]
+  alertCount: number
+  alerts: Alert[]
+}
+
+export interface FamilyRow {
+  family: string
+  units: number
+  revenue: number
+  tickets: number
+  revenueTrend: number | null
+  hasShelf: boolean
+  stops: number
+  pickups: number
+  transformation: number | null
+}
+
+export interface BrandRow {
+  brand: string
+  families: string[]
+  units: number
+  revenue: number
+  revenueTrend: number | null
+  revenueShare: number
+  shelves: string[]
+  shelfStops: number
+}
+
+export interface ProductRow {
+  code: string
+  name: string
+  brand: string
+  family: string
+  units: number
+  revenue: number
+}
+
+export interface ProductReport {
+  from: string
+  to: string
+  revenue: number
+  units: number
+  tickets: number
+  unreferencedRevenue: number
+  families: FamilyRow[]
+  brands: BrandRow[]
+  topProducts: ProductRow[]
+}
+
 export interface Alert {
   id: number
   zoneId: number | null

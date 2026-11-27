@@ -16,16 +16,16 @@ public class VisitGenerator(Random rng)
     private readonly Dictionary<int, DateTime> _restockAt = [];
     private long _sequence;
 
-    private record Appeal(double Pass, double Stop, double Pickup, decimal Price);
+    private record Appeal(double Pass, double Stop, double Pickup);
 
     private static Appeal AppealOf(string? category) => category switch
     {
-        "Dermo-cosmétique" => new(0.55, 0.42, 0.48, 38m),
-        "Bébé" => new(0.42, 0.38, 0.45, 27m),
-        "Solaires" => new(0.35, 0.24, 0.40, 45m),
-        "Médicaments conseil" => new(0.60, 0.20, 0.30, 12m),
-        "Orthopédie" => new(0.20, 0.14, 0.25, 55m),
-        _ => new(0.30, 0.18, 0.30, 20m),
+        "Dermo-cosmétique" => new(0.55, 0.42, 0.48),
+        "Bébé" => new(0.42, 0.38, 0.45),
+        "Solaires" => new(0.35, 0.24, 0.40),
+        "Médicaments conseil" => new(0.60, 0.20, 0.30),
+        "Orthopédie" => new(0.20, 0.14, 0.25),
+        _ => new(0.30, 0.18, 0.30),
     };
 
     /// <summary>Fixe le niveau d'un linéaire (état initial ou réassort par l'équipe).</summary>
@@ -82,7 +82,7 @@ public class VisitGenerator(Random rng)
         }
 
         var buys = rng.NextDouble() < ConversionProbability;
-        var interested = new List<(string Family, decimal Price)>();
+        var interested = new List<string>(); // familles des produits à encaisser
 
         foreach (var shelf in zones.Where(z => z.Type == ZoneType.Shelf).OrderBy(_ => rng.Next()).ToList())
         {
@@ -108,7 +108,7 @@ public class VisitGenerator(Random rng)
 
             Add(shelf.Id, EventType.Pickup, 1);
             var taken = buys && rng.NextDouble() < 0.7;
-            if (taken) interested.Add((shelf.Category ?? "Divers", appeal.Price));
+            if (taken) interested.Add(shelf.Category ?? "Divers");
             _fill[shelf.Id] = Math.Max(0, Fill(shelf.Id) - (taken ? Between(2, 6) : Between(0, 0.6)));
         }
 
@@ -132,12 +132,16 @@ public class VisitGenerator(Random rng)
             Advance(Between(40, 120));
             var ticket = $"T{arrivalUtc:yyMMdd}-{track[1..]}";
             // Ordonnance ou achat au comptoir, en plus des produits pris en rayon.
-            if (interested.Count == 0 || rng.NextDouble() < 0.6) interested.Add(("Ordonnance", 22m));
-            foreach (var (family, price) in interested)
+            if (interested.Count == 0 || rng.NextDouble() < 0.6) interested.Add("Ordonnance");
+            foreach (var family in interested)
             {
+                var products = ProductCatalog.Of(family);
+                var product = products.Count == 0 ? null : products[rng.Next(products.Count)];
                 var qty = rng.NextDouble() < 0.15 ? 2 : 1;
-                var amount = Math.Round(price * qty * (decimal)Between(0.6, 1.5), 3);
-                sales.Add(new IngestSale(t, ticket, $"P{rng.Next(1000, 9999)}", family, qty, amount));
+                // Le montant d'une ordonnance varie ; un produit de rayon suit son prix catalogue.
+                var factor = family == "Ordonnance" ? (decimal)Between(0.6, 1.5) : 1m;
+                var amount = Math.Round((product?.Price ?? 20m) * qty * factor, 3);
+                sales.Add(new IngestSale(t, ticket, product?.Code ?? "DIVERS", family, qty, amount));
             }
         }
 
