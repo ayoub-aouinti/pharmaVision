@@ -50,9 +50,9 @@ public class VisitGenerator(Random rng)
             SetFill(zoneId, Between(88, 100));
             level = _fill[zoneId];
         }
-        else if (level < 45 && !_restockAt.ContainsKey(zoneId))
+        else if (level < 40 && !_restockAt.ContainsKey(zoneId))
         {
-            _restockAt[zoneId] = ts.AddMinutes(Between(45, 300));
+            _restockAt[zoneId] = ts.AddMinutes(Between(120, 1100));
         }
         var measured = Math.Clamp(level + Between(-1.5, 1.5), 0, 100);
         return new IngestEvent(ts, zoneId, EventType.Fill, Math.Round(measured, 1), null);
@@ -109,7 +109,7 @@ public class VisitGenerator(Random rng)
             Add(shelf.Id, EventType.Pickup, 1);
             var taken = buys && rng.NextDouble() < 0.7;
             if (taken) interested.Add((shelf.Category ?? "Divers", appeal.Price));
-            _fill[shelf.Id] = Math.Max(0, Fill(shelf.Id) - (taken ? Between(1.2, 4.5) : Between(0, 0.6)));
+            _fill[shelf.Id] = Math.Max(0, Fill(shelf.Id) - (taken ? Between(2, 6) : Between(0, 0.6)));
         }
 
         foreach (var restricted in zones.Where(z => z.Type == ZoneType.Restricted))
