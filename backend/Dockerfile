@@ -6,6 +6,8 @@ RUN dotnet publish src/$PROJECT/$PROJECT.csproj -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 ARG PROJECT
+# Police des rapports PDF.
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app .
 ENV APP_DLL=$PROJECT.dll

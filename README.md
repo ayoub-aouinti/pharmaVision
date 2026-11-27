@@ -12,7 +12,7 @@ Documents de conception : [docs/](docs/).
 | `backend/src/PharmaVision.Infrastructure` | EF Core, migrations, hypertable TimescaleDB, données fictives initiales |
 | `backend/src/PharmaVision.Api` | API REST, ingestion, SignalR, moteur d'alertes |
 | `backend/src/PharmaVision.Simulator` | Boîtier local simulé (même API que le futur boîtier réel) |
-| `frontend` | React + TypeScript : connexion, tableau de bord, Caméras, Zones & linéaires, Produits & marques, Alertes |
+| `frontend` | React + TypeScript : connexion, tableau de bord, Caméras, Zones & linéaires, Produits & marques, Alertes, Rapports |
 
 ## Lancer en développement
 
@@ -62,6 +62,10 @@ docker compose down -v
 
 L'écran Zones & linéaires donne, pour chaque zone, ses mesures sur la période (par tranche de 5 minutes, par heure ou par jour) et ses alertes. L'écran Produits & marques croise la caisse et les linéaires. La caméra ne reconnaît pas les produits : arrêts et prises en main sont mesurés par linéaire, et les marques d'un même rayon les partagent.
 
+## Rapports
+
+PDF ou Excel pour la période choisie : synthèse, zones, produits et marques, et rapport laboratoire limité à une marque (ventes, visibilité et disponibilité de ses linéaires). Ils sont produits par l'API avec PDFsharp-MigraDoc et ClosedXML (licence MIT). Hors Docker sur Linux, les PDF demandent le paquet `fonts-dejavu-core`.
+
 ## Brancher un vrai boîtier
 
 Le boîtier s'authentifie avec l'en-tête `X-Api-Key` :
@@ -87,8 +91,8 @@ cd frontend && npm run build
 - Gestion des comptes (création, changement de mot de passe, verrouillage) : seuls les comptes de démonstration existent. Un changement de droits ne prend effet qu'à la reconnexion.
 - En conteneurs, les sessions sont perdues quand l'API est recréée (clés de chiffrement non conservées). Derrière le proxy web, la limite de tentatives est partagée par tous les postes.
 - Clés de boîtier et mot de passe de base codés pour le développement.
-- Écrans Historique & replay, Rapports, Paramètres.
+- Écrans Historique & replay, Paramètres.
 - Gestion du catalogue de produits (il sera alimenté par le logiciel de gestion d’officine).
 - Envoi réel des notifications (le canal est enregistré, rien n'est envoyé).
-- Règle « hors planogramme », rapports PDF/Excel, import CSV de la caisse.
+- Règle « hors planogramme » et mesure du respect du planogramme, import CSV de la caisse.\n- Envoi automatique hebdomadaire des rapports, période au choix (dates libres).
 - Durées de conservation des données.

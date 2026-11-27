@@ -69,7 +69,11 @@ export function downloadProducts(pharmacy: Pharmacy, period: Period, report: Pro
 
 function save(filename: string, rows: (string | number | null)[][]) {
   const csv = '﻿' + rows.map((r) => r.map(cell).join(';')).join('\r\n')
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  saveBlob(filename, new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+}
+
+export function saveBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = filename

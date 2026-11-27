@@ -1,6 +1,6 @@
 import type {
   Alert, AlertAction, AlertFilters, AlertPage, Camera, CameraInput, CurrentUser, DiscoveredCamera, HeatCell,
-  HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ShelfRow, Zone, ZoneDetail, ZoneRow,
+  HourPoint, KpiSummary, Period, Pharmacy, ProductReport, ReportFormat, ReportKind, ShelfRow, Zone, ZoneDetail, ZoneRow,
 } from './types'
 
 export class ApiError extends Error {
@@ -9,15 +9,28 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+async function send(path: string, method = 'GET', body?: unknown) {
   const response = await fetch(`/api${path}`, {
     method,
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  const text = await response.text()
-  if (!response.ok) throw new ApiError(errorMessage(text) || `Erreur ${response.status}`, response.status)
+  if (!response.ok) {
+    throw new ApiError(errorMessage(await response.text()) || `Erreur ${response.status}`, response.status)
+  }
+  return response
+}
+
+async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  const text = await (await send(path, method, body)).text()
   return (text ? JSON.parse(text) : undefined) as T
+}
+
+/** Fichier produit par le serveur, avec le nom qu'il propose. */
+async function file(path: string) {
+  const response = await send(path)
+  const filename = /filename=("?)([^";]+)\1/.exec(response.headers.get('Content-Disposition') ?? '')?.[2]
+  return { filename: filename ?? 'rapport', blob: await response.blob() }
 }
 
 /** Message lisible à partir d'une réponse d'erreur ASP.NET Core. */
@@ -59,6 +72,12 @@ export const api = {
   zoneDetail: (id: number, zoneId: number, p: Period) =>
     request<ZoneDetail>(`/analytics/zones/${zoneId}?pharmacyId=${id}&period=${p}`),
   productReport: (id: number, p: Period) => request<ProductReport>(`/analytics/products?pharmacyId=${id}&period=${p}`),
+  brands: () => request<string[]>('/reports/brands'),
+  report: (kind: ReportKind, id: number, period: Period, format: ReportFormat, brand?: string) => {
+    const query = new URLSearchParams({ pharmacyId: String(id), period, format })
+    if (brand) query.set('brand', brand)
+    return file(`/reports/${kind}?${query}`)
+  },
   alerts: (id: number) => request<Alert[]>(`/alerts?pharmacyId=${id}&limit=100`),
   alertAction: (id: number, action: AlertAction) => request<Alert>(`/alerts/${id}/action`, 'POST', { action }),
   cameras: (id: number) => request<Camera[]>(`/cameras?pharmacyId=${id}`),

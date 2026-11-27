@@ -18,7 +18,7 @@ public record ZonePointStats(
 
 public record ZoneDetail(
     int ZoneId, string Name, ZoneType Type, int BucketMinutes, double? FillThreshold, double RuptureMinutes,
-    double AvgStopSeconds, List<ZonePointStats> Points, int AlertCount, List<Alert> Alerts);
+    double? Availability, double AvgStopSeconds, List<ZonePointStats> Points, int AlertCount, List<Alert> Alerts);
 
 public record FamilyRow(
     string Family, int Units, decimal Revenue, int Tickets, double? RevenueTrend,
@@ -140,6 +140,10 @@ public class AnalyticsService(PharmaDbContext db, KpiService kpis, TimeProvider 
             ? KpiFormulas.RuptureDuration(
                 events.Where(e => e.Type == EventType.Fill).Select(e => (e.Ts, e.Value)), limit, range.To, MaxFillGap)
             : TimeSpan.Zero;
+        var levels = events.Where(e => e.Type == EventType.Fill).Select(e => e.Value).ToList();
+        double? availability = threshold is { } minimum && levels.Count > 0
+            ? (double)levels.Count(v => v >= minimum) / levels.Count
+            : null;
         var stops = events.Where(e => e.Type == EventType.Stop && e.Value > KpiFormulas.MinStopSeconds)
             .Select(e => e.Value).ToList();
 
@@ -149,7 +153,7 @@ public class AnalyticsService(PharmaDbContext db, KpiService kpis, TimeProvider 
 
         return new ZoneDetail(
             zone.Id, zone.Name, zone.Type, (int)size.TotalMinutes, threshold, Math.Round(rupture.TotalMinutes),
-            stops.Count == 0 ? 0 : Math.Round(stops.Average()), points,
+            availability, stops.Count == 0 ? 0 : Math.Round(stops.Average()), points,
             await alerts.CountAsync(ct),
             await alerts.OrderByDescending(a => a.StartedAt).Take(ZoneAlertCount).ToListAsync(ct));
     }
@@ -158,7 +162,8 @@ public class AnalyticsService(PharmaDbContext db, KpiService kpis, TimeProvider 
     /// Ventes par famille, marque et produit. La caméra ne reconnaît pas les produits : arrêts et prises
     /// en main sont mesurés par linéaire, et les marques d'un même rayon les partagent.
     /// </summary>
-    public async Task<ProductReport?> ProductsAsync(int pharmacyId, Period period, CancellationToken ct)
+    public async Task<ProductReport?> ProductsAsync(
+        int pharmacyId, Period period, CancellationToken ct, int top = TopProductCount)
     {
         if (await TimeZoneAsync(pharmacyId, ct) is not { } tz) return null;
         var range = PeriodRange.Resolve(period, Now, tz);
@@ -234,13 +239,20 @@ public class AnalyticsService(PharmaDbContext db, KpiService kpis, TimeProvider 
                 return new ProductRow(p.Code, p.Name, p.Brand!, p.Family, g.Sum(s => s.Quantity), g.Sum(s => s.Amount));
             })
             .OrderByDescending(p => p.Revenue).ThenBy(p => p.Code)
-            .Take(TopProductCount).ToList();
+            .Take(top).ToList();
 
         return new ProductReport(
             range.From, range.To, sales.Sum(s => s.Amount), sales.Sum(s => s.Quantity),
             sales.Select(s => s.TicketNo).Distinct().Count(),
             sales.Where(s => !catalog.ContainsKey(s.ProductCode)).Sum(s => s.Amount),
             families, brands, products);
+    }
+
+    /// <summary>Linéaires de l'officine qui mentionnent la marque.</summary>
+    public async Task<HashSet<int>> ShelvesListingAsync(int pharmacyId, string brand, CancellationToken ct)
+    {
+        var shelves = await ZonesOf(pharmacyId).Where(z => z.Type == ZoneType.Shelf).ToListAsync(ct);
+        return shelves.Where(z => Lists(z.Brands, brand)).Select(z => z.Id).ToHashSet();
     }
 
     /// <summary>La saisie des marques d'une zone est libre, séparée par des virgules.</summary>

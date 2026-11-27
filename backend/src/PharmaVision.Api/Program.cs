@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using PharmaVision.Api.Hubs;
 using PharmaVision.Api.Security;
 using PharmaVision.Api.Services;
+using PharmaVision.Api.Services.Reports;
 using PharmaVision.Infrastructure;
 using PharmaVision.Infrastructure.Seeding;
 
@@ -44,6 +45,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<LiveNotifier>();
 builder.Services.AddScoped<KpiService>();
 builder.Services.AddScoped<AnalyticsService>();
+builder.Services.AddScoped<ReportBuilder>();
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddHostedService<AlertEngine>();
 

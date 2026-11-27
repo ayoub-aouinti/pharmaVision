@@ -16,6 +16,7 @@ import ComingSoon from './pages/ComingSoon'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Products from './pages/Products'
+import Reports from './pages/Reports'
 import Zones from './pages/Zones'
 
 const NAV = [
@@ -40,7 +41,7 @@ function stored(key: string) {
   try { return localStorage.getItem(key) } catch { return null }
 }
 
-const IMPLEMENTED = ['/', '/cameras', '/zones', '/produits', '/alertes']
+const IMPLEMENTED = ['/', '/cameras', '/zones', '/produits', '/alertes', '/rapports']
 
 export default function App() {
   const me = useQuery({ queryKey: ['me'], queryFn: api.me, staleTime: Infinity, refetchInterval: false })
@@ -110,6 +111,7 @@ function Shell({ user }: { user: CurrentUser }) {
               } />
               <Route path="/zones" element={<Zones key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               <Route path="/produits" element={<Products key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
+              <Route path="/rapports" element={<Reports key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               <Route path="/alertes" element={<Alerts key={pharmacy.id} pharmacy={pharmacy} period={period} />} />
               {NAV.filter((n) => !IMPLEMENTED.includes(n.to)).map((n) => <Route key={n.to} path={n.to} element={<ComingSoon title={n.label} />} />)}
               <Route path="*" element={<ComingSoon title="Page introuvable" />} />

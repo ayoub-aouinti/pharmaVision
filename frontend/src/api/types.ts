@@ -155,6 +155,9 @@ export interface ProductReport {
   topProducts: ProductRow[]
 }
 
+export type ReportKind = 'synthese' | 'zones' | 'produits' | 'laboratoire'
+export type ReportFormat = 'pdf' | 'xlsx'
+
 export interface Alert {
   id: number
   zoneId: number | null
